@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_primary">#1a1a2e</color>
+    <color name="bg_secondary">#16213e</color>
+    <color name="bg_card">#0f3460</color>
+    <color name="accent">#e94560</color>
+    <color name="text_primary">#ffffff</color>
+    <color name="text_secondary">#b0bec5</color>
+    <color name="success">#4caf50</color>
+    <color name="warning">#ff9800</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="toolbar_bg">#0f3460</color>
+    <color name="status_bar">#0a1628</color>
+    <color name="divider">#1e3a5f</color>
+    <color name="ripple">#33e94560</color>
+    <color name="button_pressed">#c73652</color>
+</resources>

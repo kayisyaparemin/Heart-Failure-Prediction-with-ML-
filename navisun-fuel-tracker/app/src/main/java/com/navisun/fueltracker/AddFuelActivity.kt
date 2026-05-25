@@ -81,13 +81,10 @@ class AddFuelActivity : AppCompatActivity() {
 
         if (fuelAmount != null && pricePerLiter != null && fuelAmount > 0 && pricePerLiter > 0) {
             val totalCost = fuelAmount * pricePerLiter
-            binding.tvCalculatedCost.text = String.format(
-                getString(R.string.calculated_cost_format),
-                totalCost
-            )
-            binding.tvCalculatedCost.visibility = android.view.View.VISIBLE
+            binding.tvCalculatedCost.text = String.format("%.2f ₺", totalCost)
+            binding.cardCalculatedCost.visibility = android.view.View.VISIBLE
         } else {
-            binding.tvCalculatedCost.visibility = android.view.View.INVISIBLE
+            binding.cardCalculatedCost.visibility = android.view.View.INVISIBLE
         }
     }
 

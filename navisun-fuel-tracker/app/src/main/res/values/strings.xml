@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Yakıt Takibi</string>
+    <string name="vehicle_name">VW Polo 2010</string>
+    <string name="vehicle_title">VW Polo 2010 &#8211; Yakıt Takibi</string>
+
+    <!-- Navigation -->
+    <string name="add_fuel">Yakıt Ekle</string>
+    <string name="history">Geçmiş</string>
+    <string name="stats">İstatistikler</string>
+    <string name="history_with_count">Geçmiş (%d kayıt)</string>
+
+    <!-- Dashboard -->
+    <string name="last_consumption">Son Tüketim</string>
+    <string name="avg_consumption">Ortalama Tüketim</string>
+    <string name="total_cost">Toplam Maliyet</string>
+    <string name="total_km">Toplam KM</string>
+    <string name="l_per_100km">L/100km</string>
+    <string name="consumption">Tüketim</string>
+    <string name="dashboard_title">Gösterge Paneli</string>
+
+    <!-- Add Fuel Form -->
+    <string name="date">Tarih</string>
+    <string name="select_date">Tarih Seç</string>
+    <string name="odometer">Kilometre Sayacı</string>
+    <string name="odometer_hint">km değerini girin</string>
+    <string name="fuel_amount">Yakıt Miktarı (L)</string>
+    <string name="fuel_amount_hint">Litre cinsinden girin</string>
+    <string name="price_per_liter">Litre Fiyatı (₺)</string>
+    <string name="price_per_liter_hint">₺ cinsinden girin</string>
+    <string name="full_tank">Tam Dolum</string>
+    <string name="note">Not (opsiyonel)</string>
+    <string name="note_hint">Opsiyonel not ekleyin</string>
+    <string name="save">Kaydet</string>
+    <string name="calculated_cost_format">Toplam Tutar: %.2f ₺</string>
+    <string name="entry_saved">Kayıt başarıyla eklendi</string>
+    <string name="total_amount">Toplam Tutar</string>
+
+    <!-- History -->
+    <string name="no_data">Henüz kayıt yok</string>
+    <string name="no_data_hint">İlk yakıt dolumunuzu eklemek için\n&#34;Yakıt Ekle&#34; butonuna tıklayın</string>
+    <string name="delete_entry">Kaydı Sil</string>
+    <string name="delete_confirmation">%s tarihli kaydı silmek istediğinizden emin misiniz?</string>
+    <string name="delete">Sil</string>
+    <string name="cancel">İptal</string>
+    <string name="full_tank_label">Tam Dolum</string>
+    <string name="partial_label">Kısmi</string>
+
+    <!-- Stats -->
+    <string name="total_entries">Toplam Kayıt</string>
+    <string name="best_consumption">En İyi Tüketim</string>
+    <string name="worst_consumption">En Kötü Tüketim</string>
+    <string name="total_fuel">Toplam Yakıt</string>
+    <string name="avg_price">Ort. Litre Fiyatı</string>
+    <string name="recent_consumptions">Son 5 Dolum Tüketimi</string>
+    <string name="no_consumption_data">Tüketim hesaplaması için en az 2 tam dolum kaydı gerekli</string>
+
+    <!-- Errors -->
+    <string name="error_required">Bu alan zorunludur</string>
+    <string name="error_invalid_number">Geçerli bir sayı girin</string>
+    <string name="error_positive">Pozitif değer giriniz</string>
+</resources>

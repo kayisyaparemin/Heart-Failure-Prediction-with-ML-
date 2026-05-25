@@ -1,0 +1,491 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_primary">
+
+    <!-- Toolbar -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/bg_card"
+        android:elevation="8dp"
+        app:titleTextColor="@color/text_primary"
+        app:navigationIconTint="@color/text_primary" />
+
+    <!-- Stats Content -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="false">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Section: Genel Bilgiler -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="GENEL BİLGİLER"
+                android:textColor="@color/accent"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.12"
+                android:layout_marginBottom="10dp"
+                android:layout_marginTop="4dp" />
+
+            <!-- Toplam Kayıt + Toplam KM row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="10dp">
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="5dp"
+                    app:cardBackgroundColor="@color/bg_card"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="4dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="18dp"
+                        android:gravity="center_horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/total_entries"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp"
+                            android:textAllCaps="true"
+                            android:letterSpacing="0.08" />
+
+                        <TextView
+                            android:id="@+id/tv_total_entries_value"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--"
+                            android:textColor="@color/text_primary"
+                            android:textSize="36sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="4dp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="kayıt"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp" />
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="5dp"
+                    app:cardBackgroundColor="@color/bg_card"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="4dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="18dp"
+                        android:gravity="center_horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/total_km"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp"
+                            android:textAllCaps="true"
+                            android:letterSpacing="0.08" />
+
+                        <TextView
+                            android:id="@+id/tv_total_km_value"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--"
+                            android:textColor="@color/text_primary"
+                            android:textSize="36sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="4dp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="km"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp" />
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+            </LinearLayout>
+
+            <!-- Section: Tüketim -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TÜKETİM ANALİZİ"
+                android:textColor="@color/accent"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.12"
+                android:layout_marginBottom="10dp"
+                android:layout_marginTop="16dp" />
+
+            <!-- Ortalama tüketim full-width -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                app:cardBackgroundColor="#0a2a4a"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="20dp"
+                    android:gravity="center_vertical">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/avg_consumption"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/tv_avg_consumption_value"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--"
+                            android:textColor="@color/success"
+                            android:textSize="28sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="2dp" />
+
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:src="@drawable/ic_stats"
+                        android:alpha="0.6"
+                        android:contentDescription="İstatistik" />
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+            <!-- En İyi / En Kötü row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="10dp">
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="5dp"
+                    app:cardBackgroundColor="#0a2a1a"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="4dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/best_consumption"
+                            android:textColor="@color/success"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tv_best_consumption_value"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--"
+                            android:textColor="@color/text_primary"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="4dp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="(en az L/100km)"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="5dp"
+                    app:cardBackgroundColor="#2a1010"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="4dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/worst_consumption"
+                            android:textColor="@color/accent"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tv_worst_consumption_value"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--"
+                            android:textColor="@color/text_primary"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="4dp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="(en çok L/100km)"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+            </LinearLayout>
+
+            <!-- Section: Maliyet -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="MALİYET ANALİZİ"
+                android:textColor="@color/accent"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.12"
+                android:layout_marginBottom="10dp"
+                android:layout_marginTop="16dp" />
+
+            <!-- Toplam Maliyet + Toplam Yakıt + Ortalama Fiyat -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="10dp">
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="5dp"
+                    app:cardBackgroundColor="@color/bg_card"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="4dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        android:gravity="center_horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/total_cost"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp"
+                            android:textAllCaps="true"
+                            android:gravity="center" />
+
+                        <TextView
+                            android:id="@+id/tv_total_cost_value"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--"
+                            android:textColor="@color/warning"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="4dp" />
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginEnd="5dp"
+                    app:cardBackgroundColor="@color/bg_card"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="4dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        android:gravity="center_horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/total_fuel"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp"
+                            android:textAllCaps="true"
+                            android:gravity="center" />
+
+                        <TextView
+                            android:id="@+id/tv_total_fuel_value"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--"
+                            android:textColor="@color/text_primary"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="4dp" />
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="5dp"
+                    app:cardBackgroundColor="@color/bg_card"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="4dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        android:gravity="center_horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/avg_price"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="13sp"
+                            android:textAllCaps="true"
+                            android:gravity="center" />
+
+                        <TextView
+                            android:id="@+id/tv_avg_price_value"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="--"
+                            android:textColor="@color/text_primary"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="4dp" />
+
+                    </LinearLayout>
+
+                </androidx.cardview.widget.CardView>
+
+            </LinearLayout>
+
+            <!-- Section: Son 5 Dolum -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SON 5 DOLUM TÜKETİMİ"
+                android:textColor="@color/accent"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.12"
+                android:layout_marginBottom="10dp"
+                android:layout_marginTop="16dp" />
+
+            <!-- Recent consumptions container -->
+            <LinearLayout
+                android:id="@+id/layout_recent_consumptions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/container_recent_consumptions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <TextView
+                android:id="@+id/tv_no_recent_data"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/no_consumption_data"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
+                android:gravity="center"
+                android:padding="24dp"
+                android:visibility="visible" />
+
+            <!-- Bottom padding -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="20dp" />
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</LinearLayout>

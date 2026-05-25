@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_primary">
+
+    <!-- Toolbar -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/bg_card"
+        android:elevation="8dp"
+        app:titleTextColor="@color/text_primary"
+        app:subtitleTextColor="@color/text_secondary"
+        app:navigationIconTint="@color/text_primary" />
+
+    <!-- Form Content -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- Tarih seçici -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/date"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
+                android:layout_marginBottom="6dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_select_date"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:textSize="18sp"
+                android:textColor="@color/text_primary"
+                android:layout_marginBottom="20dp"
+                app:backgroundTint="@color/bg_secondary"
+                app:cornerRadius="12dp"
+                app:strokeColor="@color/accent"
+                app:strokeWidth="2dp"
+                app:iconTint="@color/accent" />
+
+            <!-- Kilometre Sayacı -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:hint="@string/odometer"
+                app:boxBackgroundColor="@color/bg_secondary"
+                app:boxBackgroundMode="outline"
+                app:boxStrokeColor="@color/accent"
+                app:boxStrokeWidthFocused="2dp"
+                app:hintTextColor="@color/text_secondary"
+                app:startIconDrawable="@drawable/ic_car"
+                app:startIconTint="@color/accent"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_odometer"
+                    android:layout_width="match_parent"
+                    android:layout_height="64dp"
+                    android:inputType="numberDecimal"
+                    android:textColor="@color/text_primary"
+                    android:textSize="18sp"
+                    android:hint="@string/odometer_hint"
+                    android:textColorHint="@color/text_secondary"
+                    android:imeOptions="actionNext" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Yakıt Miktarı -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:hint="@string/fuel_amount"
+                app:boxBackgroundColor="@color/bg_secondary"
+                app:boxBackgroundMode="outline"
+                app:boxStrokeColor="@color/accent"
+                app:boxStrokeWidthFocused="2dp"
+                app:hintTextColor="@color/text_secondary"
+                app:startIconDrawable="@drawable/ic_fuel"
+                app:startIconTint="@color/accent"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_fuel_amount"
+                    android:layout_width="match_parent"
+                    android:layout_height="64dp"
+                    android:inputType="numberDecimal"
+                    android:textColor="@color/text_primary"
+                    android:textSize="18sp"
+                    android:hint="@string/fuel_amount_hint"
+                    android:textColorHint="@color/text_secondary"
+                    android:imeOptions="actionNext" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Litre Fiyatı -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:hint="@string/price_per_liter"
+                app:boxBackgroundColor="@color/bg_secondary"
+                app:boxBackgroundMode="outline"
+                app:boxStrokeColor="@color/accent"
+                app:boxStrokeWidthFocused="2dp"
+                app:hintTextColor="@color/text_secondary"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_price_per_liter"
+                    android:layout_width="match_parent"
+                    android:layout_height="64dp"
+                    android:inputType="numberDecimal"
+                    android:textColor="@color/text_primary"
+                    android:textSize="18sp"
+                    android:hint="@string/price_per_liter_hint"
+                    android:textColorHint="@color/text_secondary"
+                    android:imeOptions="actionNext" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Otomatik hesaplanan tutar -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/card_calculated_cost"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:visibility="invisible"
+                app:cardBackgroundColor="#1a3a1a"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/total_amount"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/tv_calculated_cost"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/success"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+            <!-- Tam Dolum Checkbox -->
+            <com.google.android.material.checkbox.MaterialCheckBox
+                android:id="@+id/cb_full_tank"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:text="@string/full_tank"
+                android:textColor="@color/text_primary"
+                android:textSize="18sp"
+                android:checked="true"
+                android:layout_marginBottom="16dp"
+                android:paddingStart="8dp"
+                app:buttonTint="@color/accent"
+                app:useMaterialThemeColors="false" />
+
+            <!-- Not -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:hint="@string/note"
+                app:boxBackgroundColor="@color/bg_secondary"
+                app:boxBackgroundMode="outline"
+                app:boxStrokeColor="@color/divider"
+                app:boxStrokeWidthFocused="2dp"
+                app:hintTextColor="@color/text_secondary"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_note"
+                    android:layout_width="match_parent"
+                    android:layout_height="64dp"
+                    android:inputType="text"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:hint="@string/note_hint"
+                    android:textColorHint="@color/text_secondary"
+                    android:imeOptions="actionDone" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+    <!-- Save Button - Fixed at bottom -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_save"
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:layout_margin="16dp"
+        android:text="@string/save"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:letterSpacing="0.05"
+        app:backgroundTint="@color/accent"
+        app:cornerRadius="14dp"
+        app:iconTint="@color/text_primary" />
+
+</LinearLayout>

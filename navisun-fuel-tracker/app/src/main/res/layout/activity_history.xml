@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_primary">
+
+    <!-- Toolbar -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/bg_card"
+        android:elevation="8dp"
+        app:titleTextColor="@color/text_primary"
+        app:navigationIconTint="@color/text_primary" />
+
+    <!-- Swipe hint -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="← Silmek için sola kaydırın →"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp"
+        android:gravity="center"
+        android:paddingVertical="8dp"
+        android:background="@color/bg_secondary" />
+
+    <!-- RecyclerView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingVertical="8dp"
+        android:paddingHorizontal="12dp"
+        android:scrollbars="vertical" />
+
+    <!-- Empty State -->
+    <LinearLayout
+        android:id="@+id/layout_empty"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        android:padding="40dp">
+
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:src="@drawable/ic_fuel"
+            android:alpha="0.4"
+            android:contentDescription="Veri yok" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/no_data"
+            android:textColor="@color/text_primary"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_marginTop="20dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/no_data_hint"
+            android:textColor="@color/text_secondary"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:layout_marginTop="12dp" />
+
+    </LinearLayout>
+
+</LinearLayout>
