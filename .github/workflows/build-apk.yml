@@ -21,18 +21,20 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Set up Gradle 8.4
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.4'
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
       - name: Accept Android SDK licenses
         run: yes | sdkmanager --licenses || true
 
-      - name: Grant Gradle execute permission
-        run: chmod +x navisun-fuel-tracker/gradlew
-
       - name: Build debug APK
         working-directory: navisun-fuel-tracker
-        run: ./gradlew assembleDebug --stacktrace
+        run: gradle assembleDebug --stacktrace
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
