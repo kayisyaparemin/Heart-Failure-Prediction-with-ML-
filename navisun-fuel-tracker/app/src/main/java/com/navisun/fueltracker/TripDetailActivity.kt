@@ -155,7 +155,7 @@ class TripDetailActivity : AppCompatActivity() {
             // Mesafe
             val distance = TextView(this).apply {
                 text = String.format("%.1f km", seg.distanceKm)
-                setTextColor(resources.getColor(R.color.text_primary, theme))
+                setTextColor(androidx.core.content.ContextCompat.getColor(this@TripDetailActivity, R.color.text_primary))
                 textSize = 15f
                 setTypeface(null, android.graphics.Typeface.BOLD)
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -164,7 +164,7 @@ class TripDetailActivity : AppCompatActivity() {
             // Süre
             val duration = TextView(this).apply {
                 text = "${seg.durationMinutes} dk"
-                setTextColor(resources.getColor(R.color.text_secondary, theme))
+                setTextColor(androidx.core.content.ContextCompat.getColor(this@TripDetailActivity, R.color.text_secondary))
                 textSize = 14f
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
