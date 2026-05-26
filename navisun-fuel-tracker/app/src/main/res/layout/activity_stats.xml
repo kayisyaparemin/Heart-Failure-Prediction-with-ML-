@@ -16,6 +16,59 @@
         app:titleTextColor="@color/text_primary"
         app:navigationIconTint="@color/text_primary" />
 
+    <!-- Filtre Butonları -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:background="@color/bg_card"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="8dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_filter_all"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:text="HEPSİ"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            app:backgroundTint="@color/accent"
+            app:cornerRadius="8dp"
+            android:stateListAnimator="@null" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_filter_lpg"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="4dp"
+            android:text="LPG"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            app:backgroundTint="@color/bg_secondary"
+            app:cornerRadius="8dp"
+            android:stateListAnimator="@null" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_filter_benzin"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:text="BENZİN"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            app:backgroundTint="@color/bg_secondary"
+            app:cornerRadius="8dp"
+            android:stateListAnimator="@null" />
+
+    </LinearLayout>
+
     <!-- Stats Content -->
     <ScrollView
         android:layout_width="match_parent"
@@ -481,6 +534,7 @@
 
             <!-- Section: Yakıt Tipi Dağılımı -->
             <TextView
+                android:id="@+id/tv_fuel_type_section"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="YAKIT TANKI İSTATİSTİKLERİ"
@@ -493,6 +547,7 @@
 
             <!-- LPG Tankı section -->
             <androidx.cardview.widget.CardView
+                android:id="@+id/card_lpg_stats"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="10dp"
@@ -606,6 +661,7 @@
 
             <!-- Benzin Tankı section -->
             <androidx.cardview.widget.CardView
+                android:id="@+id/card_benzin_stats"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="10dp"

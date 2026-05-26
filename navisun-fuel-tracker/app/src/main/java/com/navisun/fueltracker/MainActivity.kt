@@ -1,7 +1,6 @@
 package com.navisun.fueltracker
 
 import android.Manifest
-import android.app.AlertDialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -10,7 +9,6 @@ import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
-import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -27,7 +25,6 @@ class MainActivity : AppCompatActivity() {
     private val viewModel: FuelViewModel by viewModels()
 
     private val PREFS_NAME = "navisun_prefs"
-    private val KEY_INITIAL_ODOMETER_SET = "initial_odometer_set"
     private val KEY_ACTIVE_FUEL_TYPE = "active_fuel_type"
     private val LOCATION_PERMISSION_REQUEST = 1001
 
@@ -51,7 +48,6 @@ class MainActivity : AppCompatActivity() {
                     binding.tvTripStatus.setTextColor(Color.parseColor("#ff9800"))
                 }
                 else -> {
-                    // IDLE or CONFIRMING_START
                     binding.tvTripStatus.text = getString(R.string.trip_status_idle)
                     binding.tvTripStatus.setTextColor(
                         ContextCompat.getColor(this@MainActivity, R.color.text_secondary)
@@ -69,7 +65,6 @@ class MainActivity : AppCompatActivity() {
         setupToolbar()
         selectTab("DRIVE")
 
-        // Read active fuel type from SharedPreferences
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         activeFuelType = prefs.getString(KEY_ACTIVE_FUEL_TYPE, "LPG") ?: "LPG"
         updateActiveFuelUI()
@@ -77,14 +72,11 @@ class MainActivity : AppCompatActivity() {
         setupTabListeners()
         setupNavigationListeners()
         observeViewModel()
-        checkInitialOdometer()
 
-        // Request location permission if not granted
         if (!hasLocationPermission()) {
             requestLocationPermission()
         }
 
-        // Start auto-detection service (always safe to call)
         val serviceIntent = Intent(this, TripTrackingService::class.java).apply {
             action = TripTrackingService.ACTION_START
         }
@@ -98,7 +90,6 @@ class MainActivity : AppCompatActivity() {
             tripStateReceiver,
             IntentFilter(TripTrackingService.ACTION_TRIP_STATE_UPDATE)
         )
-        // Re-read active fuel state in case it changed
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         activeFuelType = prefs.getString(KEY_ACTIVE_FUEL_TYPE, "LPG") ?: "LPG"
         updateActiveFuelUI()
@@ -115,9 +106,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun selectTab(tab: String) {
-        val driveActiveColor  = ColorStateList.valueOf(Color.parseColor("#4caf50")) // yeşil
-        val fuelActiveColor   = ColorStateList.valueOf(Color.parseColor("#e94560")) // kırmızı
-        val inactiveColor     = ColorStateList.valueOf(Color.parseColor("#37474f")) // koyu gri
+        val driveActiveColor  = ColorStateList.valueOf(Color.parseColor("#4caf50"))
+        val fuelActiveColor   = ColorStateList.valueOf(Color.parseColor("#e94560"))
+        val inactiveColor     = ColorStateList.valueOf(Color.parseColor("#37474f"))
         if (tab == "DRIVE") {
             binding.viewFlipper.displayedChild = 0
             binding.btnTabDrive.backgroundTintList = driveActiveColor
@@ -153,17 +144,26 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnLpg.setOnClickListener {
             activeFuelType = "LPG"
-            val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            prefs.edit().putString(KEY_ACTIVE_FUEL_TYPE, "LPG").apply()
+            getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit().putString(KEY_ACTIVE_FUEL_TYPE, "LPG").apply()
             updateActiveFuelUI()
+            broadcastFuelTypeChange("LPG")
         }
 
         binding.btnBenzin.setOnClickListener {
             activeFuelType = "BENZİN"
-            val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            prefs.edit().putString(KEY_ACTIVE_FUEL_TYPE, "BENZİN").apply()
+            getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit().putString(KEY_ACTIVE_FUEL_TYPE, "BENZİN").apply()
             updateActiveFuelUI()
+            broadcastFuelTypeChange("BENZİN")
         }
+    }
+
+    private fun broadcastFuelTypeChange(fuelType: String) {
+        LocalBroadcastManager.getInstance(this).sendBroadcast(
+            Intent(TripTrackingService.ACTION_FUEL_TYPE_CHANGED)
+                .putExtra(TripTrackingService.EXTRA_FUEL_TYPE, fuelType)
+        )
     }
 
     private fun updateActiveFuelUI() {
@@ -208,45 +208,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun checkInitialOdometer() {
-        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val alreadySet = prefs.getBoolean(KEY_INITIAL_ODOMETER_SET, false)
-        if (!alreadySet) {
-            showInitialOdometerDialog()
-        }
-    }
-
-    private fun showInitialOdometerDialog() {
-        val editText = EditText(this).apply {
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER or
-                    android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
-            hint = getString(R.string.initial_odometer_hint)
-            setTextColor(android.graphics.Color.parseColor("#212121"))
-            setHintTextColor(android.graphics.Color.parseColor("#757575"))
-            setBackgroundColor(android.graphics.Color.WHITE)
-            setPadding(48, 24, 48, 24)
-        }
-
-        AlertDialog.Builder(this, R.style.NavisunDialogTheme)
-            .setTitle(getString(R.string.initial_odometer_title))
-            .setMessage(getString(R.string.initial_odometer_message))
-            .setView(editText)
-            .setCancelable(false)
-            .setPositiveButton(getString(R.string.ok)) { _, _ ->
-                val value = editText.text.toString().toDoubleOrNull()
-                val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                if (value != null && value > 0) {
-                    prefs.edit()
-                        .putBoolean(KEY_INITIAL_ODOMETER_SET, true)
-                        .putFloat("initial_odometer_value", value.toFloat())
-                        .apply()
-                } else {
-                    prefs.edit().putBoolean(KEY_INITIAL_ODOMETER_SET, true).apply()
-                }
-            }
-            .show()
-    }
-
     private fun hasLocationPermission(): Boolean {
         return ContextCompat.checkSelfPermission(
             this, Manifest.permission.ACCESS_FINE_LOCATION
@@ -272,17 +233,12 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == LOCATION_PERMISSION_REQUEST) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted – service will start using GPS on next onStartCommand cycle
                 val intent = Intent(this, TripTrackingService::class.java).apply {
                     action = TripTrackingService.ACTION_START
                 }
                 ContextCompat.startForegroundService(this, intent)
             } else {
-                Toast.makeText(
-                    this,
-                    getString(R.string.location_permission_required),
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(this, getString(R.string.location_permission_required), Toast.LENGTH_SHORT).show()
             }
         }
     }

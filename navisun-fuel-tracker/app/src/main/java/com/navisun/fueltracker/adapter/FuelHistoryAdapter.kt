@@ -34,8 +34,9 @@ class FuelHistoryAdapter(
             // Tarih
             binding.tvDate.text = dateFormat.format(Date(entry.date))
 
-            // Kilometre sayacı
-            binding.tvOdometer.text = String.format("%,.0f km", entry.odometer)
+            // GPS km (son dolumdan bu yana)
+            val gpsKm = gpsDistances[entry.id]
+            binding.tvOdometer.text = if (gpsKm != null && gpsKm > 0) String.format("%.0f km", gpsKm) else "--"
 
             // Yakıt miktarı
             binding.tvFuelAmount.text = String.format("%.2f L", entry.fuelAmount)

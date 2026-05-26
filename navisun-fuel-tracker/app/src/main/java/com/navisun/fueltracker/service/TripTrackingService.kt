@@ -2,8 +2,10 @@ package com.navisun.fueltracker.service
 
 import android.Manifest
 import android.app.*
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
@@ -25,6 +27,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import java.util.Locale
 import kotlin.math.asin
 import kotlin.math.cos
 import kotlin.math.pow
@@ -48,7 +51,10 @@ private const val KEY_CP_ROUTE = "cp_route"
 private const val KEY_CP_MAX_SPEED = "cp_max_speed"
 private const val KEY_CP_DISTANCE = "cp_distance"
 private const val KEY_CP_FUEL_TYPE = "cp_fuel_type"
+private const val KEY_CP_SEGMENTS = "cp_segments"
 private const val CHECKPOINT_INTERVAL_MS = 30_000L  // every 30 seconds
+
+private data class SegmentStart(val fuelType: String, val startRouteIndex: Int, val startTimeMs: Long)
 
 class TripTrackingService : Service() {
 
@@ -56,11 +62,12 @@ class TripTrackingService : Service() {
         const val ACTION_START = "com.navisun.fueltracker.START_TRACKING"
         const val ACTION_STOP = "com.navisun.fueltracker.STOP_TRACKING"
         const val ACTION_TRIP_STATE_UPDATE = "TRIP_STATE_UPDATE"
+        const val ACTION_FUEL_TYPE_CHANGED = "com.navisun.fueltracker.FUEL_TYPE_CHANGED"
         const val EXTRA_STATE = "state"
         const val EXTRA_SPEED_KMH = "speed_kmh"
         const val EXTRA_DISTANCE_KM = "distance_km"
+        const val EXTRA_FUEL_TYPE = "fuel_type"
 
-        // Keep old constant name for backward compat with existing speed receiver
         const val ACTION_SPEED_UPDATE = "TRIP_STATE_UPDATE"
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "trip_channel"
@@ -79,27 +86,21 @@ class TripTrackingService : Service() {
 
     private lateinit var locationManager: LocationManager
 
-    // State machine
     private var state = TripState.IDLE
-
-    // Timing markers
     private var movingStartTime = 0L
     private var stoppedStartTime = 0L
 
-    // Trip data
     private var startLat = 0.0
     private var startLon = 0.0
     private var startTime = 0L
     private var routePoints = mutableListOf<RoutePoint>()
     private var maxSpeed = 0f
-
-    // Active fuel type – read from SharedPreferences at trip start and stored here
-    // so the checkpoint can persist it without re-reading prefs each time.
     private var activeFuelType = "LPG"
+
+    private var segmentStarts = mutableListOf<SegmentStart>()
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    // Checkpoint handler – fires every 30 s while a trip is in progress
     private val checkpointHandler = Handler(Looper.getMainLooper())
     private val checkpointRunnable = object : Runnable {
         override fun run() {
@@ -107,6 +108,17 @@ class TripTrackingService : Service() {
                 saveCheckpoint()
             }
             checkpointHandler.postDelayed(this, CHECKPOINT_INTERVAL_MS)
+        }
+    }
+
+    private val fuelTypeReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val newType = intent?.getStringExtra(EXTRA_FUEL_TYPE) ?: return
+            if (newType == activeFuelType) return
+            activeFuelType = newType
+            if (state == TripState.RECORDING || state == TripState.CONFIRMING_STOP) {
+                segmentStarts.add(SegmentStart(newType, routePoints.size, System.currentTimeMillis()))
+            }
         }
     }
 
@@ -125,20 +137,18 @@ class TripTrackingService : Service() {
         super.onCreate()
         locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
         createNotificationChannel()
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+            fuelTypeReceiver, IntentFilter(ACTION_FUEL_TYPE_CHANGED)
+        )
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Always call startForeground first, before any other logic
         startForeground(NOTIFICATION_ID, buildNotification())
-
-        // Recover any trip that was interrupted by a sudden power loss
         recoverCheckpointIfExists()
-
         when (intent?.action) {
             ACTION_START -> beginTracking()
             ACTION_STOP -> endTracking()
         }
-
         return START_STICKY
     }
 
@@ -147,12 +157,11 @@ class TripTrackingService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         serviceScope.cancel()
-        // Stop the periodic checkpoint timer
         checkpointHandler.removeCallbacks(checkpointRunnable)
-        // Defensive final checkpoint: if we are torn down mid-trip, persist what we have
         if (state == TripState.RECORDING && routePoints.isNotEmpty()) {
             saveCheckpoint()
         }
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(fuelTypeReceiver)
         try {
             locationManager.removeUpdates(locationListener)
         } catch (e: Exception) {
@@ -162,14 +171,11 @@ class TripTrackingService : Service() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
-        // Restart the service if swiped away
         val restartIntent = Intent(applicationContext, TripTrackingService::class.java).apply {
             action = ACTION_START
         }
         val pendingIntent = PendingIntent.getService(
-            applicationContext,
-            1,
-            restartIntent,
+            applicationContext, 1, restartIntent,
             PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
         )
         val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
@@ -184,8 +190,6 @@ class TripTrackingService : Service() {
     private fun beginTracking() {
         state = TripState.IDLE
         requestLocationUpdates(slow = true)
-        // Start the checkpoint heartbeat (safe to call even if already scheduled –
-        // removeCallbacks ensures no duplicate chain)
         checkpointHandler.removeCallbacks(checkpointRunnable)
         checkpointHandler.postDelayed(checkpointRunnable, CHECKPOINT_INTERVAL_MS)
     }
@@ -220,9 +224,7 @@ class TripTrackingService : Service() {
                         startTrip(location)
                         state = TripState.RECORDING
                     }
-                    // else: still waiting for confirmation, stay in CONFIRMING_START
                 } else {
-                    // speed dropped before confirmation
                     state = TripState.IDLE
                     requestLocationUpdates(slow = true)
                 }
@@ -230,12 +232,9 @@ class TripTrackingService : Service() {
 
             TripState.RECORDING -> {
                 routePoints.add(RoutePoint(location.latitude, location.longitude, now, speedKmh))
-                if (speedKmh > maxSpeed) {
-                    maxSpeed = speedKmh
-                }
+                if (speedKmh > maxSpeed) maxSpeed = speedKmh
                 broadcastStateUpdate(state, speedKmh)
                 updateNotification()
-
                 if (speedKmh < STOP_SPEED_KMH) {
                     stoppedStartTime = now
                     state = TripState.CONFIRMING_STOP
@@ -244,7 +243,6 @@ class TripTrackingService : Service() {
 
             TripState.CONFIRMING_STOP -> {
                 if (speedKmh >= STOP_SPEED_KMH) {
-                    // Driver resumed – go back to recording
                     state = TripState.RECORDING
                     routePoints.add(RoutePoint(location.latitude, location.longitude, now, speedKmh))
                     if (speedKmh > maxSpeed) maxSpeed = speedKmh
@@ -260,7 +258,6 @@ class TripTrackingService : Service() {
             }
         }
 
-        // Always broadcast and update notification so UI sees current speed/state
         if (state == TripState.IDLE || state == TripState.CONFIRMING_START) {
             broadcastStateUpdate(state, speedKmh)
             updateNotification()
@@ -268,24 +265,20 @@ class TripTrackingService : Service() {
     }
 
     private fun startTrip(location: Location) {
-        // Discard any stale checkpoint from a previous trip before starting fresh
         clearCheckpoint()
-
         startLat = location.latitude
         startLon = location.longitude
         startTime = System.currentTimeMillis()
         routePoints = mutableListOf()
         maxSpeed = 0f
-
-        // Cache the active fuel type so checkpoint saves don't need to re-read prefs
         activeFuelType = getSharedPreferences("navisun_prefs", Context.MODE_PRIVATE)
             .getString("active_fuel_type", "LPG") ?: "LPG"
+        segmentStarts = mutableListOf(SegmentStart(activeFuelType, 0, startTime))
     }
 
     private fun saveTrip(location: Location) {
         if (routePoints.size < 2) return
 
-        // Calculate total Haversine distance
         var distance = 0.0
         for (i in 1 until routePoints.size) {
             distance += haversineKm(
@@ -293,7 +286,6 @@ class TripTrackingService : Service() {
                 routePoints[i].lat, routePoints[i].lon
             )
         }
-
         if (distance < MIN_TRIP_DISTANCE_KM) return
 
         val endTime = System.currentTimeMillis()
@@ -305,6 +297,7 @@ class TripTrackingService : Service() {
             .getString("active_fuel_type", "LPG") ?: "LPG"
 
         val routeJson = serializeRoute(routePoints)
+        val segJson = buildFinalSegmentsJson(endTime)
 
         val trip = TripEntry(
             startTime = startTime,
@@ -318,27 +311,63 @@ class TripTrackingService : Service() {
             maxSpeedKmh = maxSpeed.toDouble(),
             durationMinutes = durationMin,
             routePointsJson = routeJson,
-            fuelType = fuelType
+            fuelType = fuelType,
+            segmentsJson = segJson
         )
 
         serviceScope.launch {
             FuelDatabase.getDatabase(applicationContext).tripDao().insertTrip(trip)
         }
-
-        // Normal trip end – checkpoint is no longer needed
         clearCheckpoint()
     }
+
+    // -------------------------------------------------------------------------
+    // Segment helpers
+    // -------------------------------------------------------------------------
+
+    private fun buildFinalSegmentsJson(finalEndTime: Long): String {
+        val starts = segmentStarts
+        if (starts.isEmpty()) {
+            val dist = calculateTotalDistance()
+            val dur = ((finalEndTime - startTime) / 60_000L).toInt().coerceAtLeast(0)
+            return """[{"fuelType":"$activeFuelType","distanceKm":${dist.fmtKm()},"durationMinutes":$dur}]"""
+        }
+
+        val sb = StringBuilder("[")
+        for (i in starts.indices) {
+            val seg = starts[i]
+            val endIdx = if (i + 1 < starts.size) starts[i + 1].startRouteIndex else routePoints.size
+            val endMs = if (i + 1 < starts.size) starts[i + 1].startTimeMs else finalEndTime
+
+            var dist = 0.0
+            val fromIdx = (seg.startRouteIndex + 1).coerceAtMost(endIdx)
+            for (j in fromIdx until endIdx) {
+                dist += haversineKm(
+                    routePoints[j - 1].lat, routePoints[j - 1].lon,
+                    routePoints[j].lat, routePoints[j].lon
+                )
+            }
+            val dur = ((endMs - seg.startTimeMs) / 60_000L).toInt().coerceAtLeast(0)
+
+            if (i > 0) sb.append(",")
+            sb.append("""{"fuelType":"${seg.fuelType}","distanceKm":${dist.fmtKm()},"durationMinutes":$dur}""")
+        }
+        sb.append("]")
+        return sb.toString()
+    }
+
+    private fun Double.fmtKm() = String.format(Locale.US, "%.3f", this)
 
     // -------------------------------------------------------------------------
     // Checkpoint / recovery
     // -------------------------------------------------------------------------
 
-    /** Persist current trip progress to SharedPreferences. */
     private fun saveCheckpoint() {
         if (routePoints.isEmpty()) return
         val prefs = getSharedPreferences(PREFS_CHECKPOINT, Context.MODE_PRIVATE)
         val routeJson = serializeRoute(routePoints)
         val totalDist = calculateTotalDistance()
+        val segJson = buildFinalSegmentsJson(System.currentTimeMillis())
         prefs.edit()
             .putBoolean(KEY_HAS_CHECKPOINT, true)
             .putLong(KEY_CP_START_TIME, startTime)
@@ -348,20 +377,14 @@ class TripTrackingService : Service() {
             .putFloat(KEY_CP_MAX_SPEED, maxSpeed)
             .putFloat(KEY_CP_DISTANCE, totalDist.toFloat())
             .putString(KEY_CP_FUEL_TYPE, activeFuelType)
+            .putString(KEY_CP_SEGMENTS, segJson)
             .apply()
     }
 
-    /** Remove any persisted checkpoint. */
     private fun clearCheckpoint() {
-        getSharedPreferences(PREFS_CHECKPOINT, Context.MODE_PRIVATE)
-            .edit().clear().apply()
+        getSharedPreferences(PREFS_CHECKPOINT, Context.MODE_PRIVATE).edit().clear().apply()
     }
 
-    /**
-     * Called once at service start. If a checkpoint exists (from a previous session
-     * that ended abruptly) and the saved distance meets the minimum threshold, the
-     * trip is written to the database and the checkpoint is cleared.
-     */
     private fun recoverCheckpointIfExists() {
         val prefs = getSharedPreferences(PREFS_CHECKPOINT, Context.MODE_PRIVATE)
         if (!prefs.getBoolean(KEY_HAS_CHECKPOINT, false)) return
@@ -378,14 +401,13 @@ class TripTrackingService : Service() {
         val cpMaxSpeed = prefs.getFloat(KEY_CP_MAX_SPEED, 0f).toDouble()
         val cpRoute = prefs.getString(KEY_CP_ROUTE, "[]") ?: "[]"
         val cpFuelType = prefs.getString(KEY_CP_FUEL_TYPE, "LPG") ?: "LPG"
+        val cpSegments = prefs.getString(KEY_CP_SEGMENTS, "[]") ?: "[]"
         val endTime = System.currentTimeMillis()
         val durationMin = ((endTime - cpStartTime) / 60000).toInt()
 
-        // Derive end position from the last recorded route point
         val lastPoint = extractLastRoutePoint(cpRoute)
         val endLat = lastPoint?.first ?: cpStartLat
         val endLon = lastPoint?.second ?: cpStartLon
-
         val avgSpeed = if (durationMin > 0) (distKm / (durationMin / 60.0)) else 0.0
 
         val trip = TripEntry(
@@ -400,7 +422,8 @@ class TripTrackingService : Service() {
             maxSpeedKmh = cpMaxSpeed,
             durationMinutes = durationMin,
             routePointsJson = cpRoute,
-            fuelType = cpFuelType
+            fuelType = cpFuelType,
+            segmentsJson = cpSegments
         )
 
         serviceScope.launch {
@@ -413,10 +436,6 @@ class TripTrackingService : Service() {
     // Helper utilities
     // -------------------------------------------------------------------------
 
-    /**
-     * Parse the last [lat,lon] pair from a route JSON string produced by
-     * [serializeRoute] (format: "[[lat,lon],[lat,lon],...]").
-     */
     private fun extractLastRoutePoint(json: String): Pair<Double, Double>? {
         val lastBracket = json.lastIndexOf('[')
         if (lastBracket < 0) return null
@@ -430,7 +449,6 @@ class TripTrackingService : Service() {
         }
     }
 
-    /** Sum of Haversine distances across all recorded route points. */
     private fun calculateTotalDistance(): Double {
         var total = 0.0
         for (i in 1 until routePoints.size) {
@@ -507,7 +525,7 @@ class TripTrackingService : Service() {
                 )
             }
         } catch (e: SecurityException) {
-            // Permission not granted – graceful no-op
+            // Permission not granted
         } catch (e: Exception) {
             // GPS not available
         }
@@ -517,26 +535,14 @@ class TripTrackingService : Service() {
         val distanceKm = currentDistanceKm()
 
         val (title, text, priority) = when (state) {
-            TripState.IDLE -> Triple(
-                "Yakıt Takibi",
-                "Sürüş bekleniyor...",
-                NotificationCompat.PRIORITY_LOW
-            )
-            TripState.CONFIRMING_START -> Triple(
-                "Yakıt Takibi",
-                "Hareket tespit edildi...",
-                NotificationCompat.PRIORITY_LOW
-            )
+            TripState.IDLE -> Triple("Yakıt Takibi", "Sürüş bekleniyor...", NotificationCompat.PRIORITY_LOW)
+            TripState.CONFIRMING_START -> Triple("Yakıt Takibi", "Hareket tespit edildi...", NotificationCompat.PRIORITY_LOW)
             TripState.RECORDING -> Triple(
                 "Sürüş Kaydediliyor",
                 String.format("📍 %.1f km • %.0f km/h", distanceKm, if (routePoints.isNotEmpty()) routePoints.last().speedKmh else 0f),
                 NotificationCompat.PRIORITY_DEFAULT
             )
-            TripState.CONFIRMING_STOP -> Triple(
-                "Yakıt Takibi",
-                "Sürüş bitiyor...",
-                NotificationCompat.PRIORITY_LOW
-            )
+            TripState.CONFIRMING_STOP -> Triple("Yakıt Takibi", "Sürüş bitiyor...", NotificationCompat.PRIORITY_LOW)
         }
 
         val activityIntent = Intent(this, MainActivity::class.java).apply {
@@ -565,9 +571,7 @@ class TripTrackingService : Service() {
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Sürüş Takibi",
-                NotificationManager.IMPORTANCE_LOW
+                CHANNEL_ID, "Sürüş Takibi", NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "GPS ile otomatik sürüş takibi"
             }

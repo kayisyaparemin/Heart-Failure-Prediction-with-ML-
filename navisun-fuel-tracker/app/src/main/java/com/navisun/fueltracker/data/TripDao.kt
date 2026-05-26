@@ -27,4 +27,7 @@ interface TripDao {
 
     @Query("SELECT * FROM trips ORDER BY startTime DESC")
     suspend fun getAllTripsList(): List<TripEntry>
+
+    @Query("SELECT * FROM trips WHERE startTime >= :fromTime AND endTime <= :toTime")
+    suspend fun getTripsBetweenAll(fromTime: Long, toTime: Long): List<TripEntry>
 }

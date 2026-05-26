@@ -1,6 +1,10 @@
 package com.navisun.fueltracker
 
+import android.graphics.Color
 import android.os.Bundle
+import android.view.View
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import android.content.Context
@@ -28,13 +32,17 @@ class TripDetailActivity : AppCompatActivity() {
         const val EXTRA_TRIP_ID = "extra_trip_id"
     }
 
+    private data class TripSegment(
+        val fuelType: String = "LPG",
+        val distanceKm: Double = 0.0,
+        val durationMinutes: Int = 0
+    )
+
     private lateinit var binding: ActivityTripDetailBinding
     private val dateFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("tr", "TR"))
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // OSMDroid configuration must be set before MapView is inflated
         Configuration.getInstance().load(
             applicationContext,
             applicationContext.getSharedPreferences("osmdroid", Context.MODE_PRIVATE)
@@ -88,44 +96,110 @@ class TripDetailActivity : AppCompatActivity() {
     }
 
     private fun displayTrip(trip: TripEntry) {
-        // Stats
         binding.tvDetailDate.text = dateFormat.format(Date(trip.startTime))
         binding.tvDetailDistance.text = String.format("%.1f km", trip.distanceKm)
         binding.tvDetailDuration.text = String.format("%d dk", trip.durationMinutes)
         binding.tvDetailAvgSpeed.text = String.format("%.0f km/s", trip.avgSpeedKmh)
         binding.tvDetailMaxSpeed.text = String.format("%.0f km/s", trip.maxSpeedKmh)
 
-        // Fuel type badge
+        // Yakıt tipi rozeti
         binding.tvDetailFuelType.text = trip.fuelType
-        val badgeColor = if (trip.fuelType == "LPG") {
-            android.graphics.Color.parseColor("#00897b")
-        } else {
-            android.graphics.Color.parseColor("#f57c00")
-        }
-        val drawable = androidx.core.content.ContextCompat.getDrawable(
-            this,
-            R.drawable.bg_fuel_badge
-        )?.mutate()
+        val badgeColor = if (trip.fuelType == "LPG") Color.parseColor("#00897b") else Color.parseColor("#f57c00")
+        val drawable = androidx.core.content.ContextCompat.getDrawable(this, R.drawable.bg_fuel_badge)?.mutate()
         (drawable as? android.graphics.drawable.GradientDrawable)?.setColor(badgeColor)
         binding.tvDetailFuelType.background = drawable
 
-        // Map
+        displaySegments(trip)
         setupRouteOnMap(trip)
+    }
+
+    private fun displaySegments(trip: TripEntry) {
+        val segments = parseSegments(trip.segmentsJson)
+
+        // Sadece birden fazla segment varsa bölümü göster
+        if (segments.size <= 1) {
+            binding.containerSegments.visibility = View.GONE
+            return
+        }
+
+        binding.containerSegments.visibility = View.VISIBLE
+        binding.llSegments.removeAllViews()
+
+        for (seg in segments) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).also { it.bottomMargin = 8.dp }
+                gravity = android.view.Gravity.CENTER_VERTICAL
+            }
+
+            // Yakıt rozeti
+            val badge = TextView(this).apply {
+                text = seg.fuelType
+                setTextColor(Color.WHITE)
+                textSize = 12f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                val badgeColor = if (seg.fuelType == "LPG") Color.parseColor("#00897b") else Color.parseColor("#f57c00")
+                val bg = androidx.core.content.ContextCompat.getDrawable(this@TripDetailActivity, R.drawable.bg_fuel_badge)?.mutate()
+                (bg as? android.graphics.drawable.GradientDrawable)?.setColor(badgeColor)
+                background = bg
+                setPadding(20, 8, 20, 8)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).also { it.marginEnd = 24.dp }
+            }
+
+            // Mesafe
+            val distance = TextView(this).apply {
+                text = String.format("%.1f km", seg.distanceKm)
+                setTextColor(resources.getColor(R.color.text_primary, theme))
+                textSize = 15f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+
+            // Süre
+            val duration = TextView(this).apply {
+                text = "${seg.durationMinutes} dk"
+                setTextColor(resources.getColor(R.color.text_secondary, theme))
+                textSize = 14f
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+            }
+
+            row.addView(badge)
+            row.addView(distance)
+            row.addView(duration)
+            binding.llSegments.addView(row)
+        }
+    }
+
+    private val Int.dp: Int get() = (this * resources.displayMetrics.density).toInt()
+
+    private fun parseSegments(json: String): List<TripSegment> {
+        return try {
+            val type = object : TypeToken<List<TripSegment>>() {}.type
+            Gson().fromJson(json, type) ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     private fun setupRouteOnMap(trip: TripEntry) {
         val overlays = binding.mapView.overlays
         overlays.clear()
 
-        // Parse route points from JSON
         val routePoints = parseRoutePoints(trip.routePointsJson)
 
         if (routePoints.isEmpty()) {
-            // Just show start/end markers if no route
             if (trip.startLat != 0.0 || trip.startLon != 0.0) {
                 val startPoint = GeoPoint(trip.startLat, trip.startLon)
                 val endPoint = GeoPoint(trip.endLat, trip.endLon)
-
                 addMarker(startPoint, "Başlangıç", isStart = true)
                 addMarker(endPoint, "Bitiş", isStart = false)
                 binding.mapView.controller.setCenter(startPoint)
@@ -135,40 +209,32 @@ class TripDetailActivity : AppCompatActivity() {
 
         val geoPoints = routePoints.map { GeoPoint(it[0], it[1]) }
 
-        // Draw polyline
         val polyline = Polyline().apply {
             setPoints(geoPoints)
-            outlinePaint.color = android.graphics.Color.parseColor("#2196F3")
+            outlinePaint.color = Color.parseColor("#2196F3")
             outlinePaint.strokeWidth = 8f
         }
         overlays.add(polyline)
 
-        // Start marker (green)
-        val startPoint = geoPoints.first()
-        addMarker(startPoint, "Başlangıç", isStart = true)
+        addMarker(geoPoints.first(), "Başlangıç", isStart = true)
+        addMarker(geoPoints.last(), "Bitiş", isStart = false)
 
-        // End marker (red)
-        val endPoint = geoPoints.last()
-        addMarker(endPoint, "Bitiş", isStart = false)
-
-        // Auto-zoom to fit bounds
         if (geoPoints.size >= 2) {
             val minLat = geoPoints.minOf { it.latitude }
             val maxLat = geoPoints.maxOf { it.latitude }
             val minLon = geoPoints.minOf { it.longitude }
             val maxLon = geoPoints.maxOf { it.longitude }
-
             val boundingBox = BoundingBox(maxLat, maxLon, minLat, minLon)
             binding.mapView.post {
                 try {
                     binding.mapView.zoomToBoundingBox(boundingBox, true, 80)
                 } catch (e: Exception) {
-                    binding.mapView.controller.setCenter(startPoint)
+                    binding.mapView.controller.setCenter(geoPoints.first())
                     binding.mapView.controller.setZoom(13.0)
                 }
             }
         } else {
-            binding.mapView.controller.setCenter(startPoint)
+            binding.mapView.controller.setCenter(geoPoints.first())
             binding.mapView.controller.setZoom(13.0)
         }
 
@@ -184,13 +250,13 @@ class TripDetailActivity : AppCompatActivity() {
                 androidx.core.content.ContextCompat.getDrawable(
                     this@TripDetailActivity, android.R.drawable.presence_online
                 )?.mutate()?.also {
-                    it.setColorFilter(android.graphics.Color.GREEN, android.graphics.PorterDuff.Mode.SRC_IN)
+                    it.setColorFilter(Color.GREEN, android.graphics.PorterDuff.Mode.SRC_IN)
                 }
             } else {
                 androidx.core.content.ContextCompat.getDrawable(
                     this@TripDetailActivity, android.R.drawable.presence_busy
                 )?.mutate()?.also {
-                    it.setColorFilter(android.graphics.Color.RED, android.graphics.PorterDuff.Mode.SRC_IN)
+                    it.setColorFilter(Color.RED, android.graphics.PorterDuff.Mode.SRC_IN)
                 }
             }
         }

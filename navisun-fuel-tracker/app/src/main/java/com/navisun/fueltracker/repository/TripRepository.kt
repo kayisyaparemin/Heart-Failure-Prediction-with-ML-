@@ -23,4 +23,8 @@ class TripRepository(private val tripDao: TripDao) {
     suspend fun getAllTripsList(): List<TripEntry> {
         return tripDao.getAllTripsList()
     }
+
+    suspend fun getTripsBetweenAll(fromTime: Long, toTime: Long): List<TripEntry> {
+        return tripDao.getTripsBetweenAll(fromTime, toTime)
+    }
 }

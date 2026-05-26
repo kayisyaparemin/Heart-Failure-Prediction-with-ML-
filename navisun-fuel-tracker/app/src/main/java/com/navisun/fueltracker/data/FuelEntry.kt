@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 data class FuelEntry(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val date: Long,            // Unix timestamp (milliseconds)
-    val odometer: Double,      // Kilometre sayacı (km)
+    val odometer: Double = 0.0, // Kilometre sayacı (artık kullanılmıyor, GPS'ten hesaplanıyor)
     val fuelAmount: Double,    // Doldurulan yakıt (litre)
     val pricePerLiter: Double, // Litre fiyatı (TL)
     val fullTank: Boolean,     // Tam dolum mu?

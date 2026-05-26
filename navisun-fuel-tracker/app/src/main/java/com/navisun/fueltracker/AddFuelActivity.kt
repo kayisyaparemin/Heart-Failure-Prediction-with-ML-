@@ -1,6 +1,8 @@
 package com.navisun.fueltracker
 
 import android.app.DatePickerDialog
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -8,7 +10,6 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.navisun.fueltracker.data.FuelDatabase
 import com.navisun.fueltracker.data.FuelEntry
@@ -29,13 +30,17 @@ class AddFuelActivity : AppCompatActivity() {
     private val calendar = Calendar.getInstance()
     private val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale("tr", "TR"))
 
-    private var selectedFuelType = "BENZİN"
+    private var selectedFuelType = "LPG"
     private var gpsDistanceKm: Double = 0.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityAddFuelBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Başlangıç yakıt tipini prefs'ten oku
+        val prefs = getSharedPreferences("navisun_prefs", MODE_PRIVATE)
+        selectedFuelType = prefs.getString("active_fuel_type", "LPG") ?: "LPG"
 
         setupToolbar()
         setupDatePicker()
@@ -90,15 +95,16 @@ class AddFuelActivity : AppCompatActivity() {
     }
 
     private fun updateFuelTypeUI() {
-        val accentColor = ContextCompat.getColor(this, R.color.accent)
-        val cardColor = ContextCompat.getColor(this, R.color.bg_card)
+        val lpgActive = ColorStateList.valueOf(Color.parseColor("#0288d1"))
+        val benzinActive = ColorStateList.valueOf(Color.parseColor("#f57c00"))
+        val inactive = ColorStateList.valueOf(Color.parseColor("#37474f"))
 
-        if (selectedFuelType == "BENZİN") {
-            binding.btnFuelBenzin.backgroundTintList = android.content.res.ColorStateList.valueOf(accentColor)
-            binding.btnFuelLpg.backgroundTintList = android.content.res.ColorStateList.valueOf(cardColor)
+        if (selectedFuelType == "LPG") {
+            binding.btnFuelLpg.backgroundTintList = lpgActive
+            binding.btnFuelBenzin.backgroundTintList = inactive
         } else {
-            binding.btnFuelBenzin.backgroundTintList = android.content.res.ColorStateList.valueOf(cardColor)
-            binding.btnFuelLpg.backgroundTintList = android.content.res.ColorStateList.valueOf(accentColor)
+            binding.btnFuelBenzin.backgroundTintList = benzinActive
+            binding.btnFuelLpg.backgroundTintList = inactive
         }
     }
 
@@ -111,8 +117,9 @@ class AddFuelActivity : AppCompatActivity() {
                 val db = FuelDatabase.getDatabase(this@AddFuelActivity)
                 val lastEntry = db.fuelDao().getLastEntryByType(fuelType)
                 val fromTime = lastEntry?.date ?: 0L
-                val trips = db.tripDao().getTripsBetween(fromTime, currentDate, fuelType)
-                trips.sumOf { it.distanceKm }
+                // getTripsBetweenAll + segment km için doğru yakıt tipini kullan
+                val trips = db.tripDao().getTripsBetweenAll(fromTime, currentDate)
+                trips.sumOf { it.getKmForFuelType(fuelType) }
             }
 
             gpsDistanceKm = result
@@ -134,7 +141,6 @@ class AddFuelActivity : AppCompatActivity() {
                 calculateAndDisplayCost()
             }
         }
-
         binding.etFuelAmount.addTextChangedListener(watcher)
         binding.etPricePerLiter.addTextChangedListener(watcher)
     }
@@ -162,21 +168,12 @@ class AddFuelActivity : AppCompatActivity() {
     }
 
     private fun setupSaveButton() {
-        binding.btnSave.setOnClickListener {
-            saveEntry()
-        }
+        binding.btnSave.setOnClickListener { saveEntry() }
     }
 
     private fun saveEntry() {
-        val odometerStr = binding.etOdometer.text.toString().trim()
         val fuelAmountStr = binding.etFuelAmount.text.toString().trim()
         val pricePerLiterStr = binding.etPricePerLiter.text.toString().trim()
-
-        if (odometerStr.isEmpty()) {
-            binding.etOdometer.error = getString(R.string.error_required)
-            binding.etOdometer.requestFocus()
-            return
-        }
 
         if (fuelAmountStr.isEmpty()) {
             binding.etFuelAmount.error = getString(R.string.error_required)
@@ -187,13 +184,6 @@ class AddFuelActivity : AppCompatActivity() {
         if (pricePerLiterStr.isEmpty()) {
             binding.etPricePerLiter.error = getString(R.string.error_required)
             binding.etPricePerLiter.requestFocus()
-            return
-        }
-
-        val odometer = odometerStr.toDoubleOrNull()
-        if (odometer == null || odometer <= 0) {
-            binding.etOdometer.error = getString(R.string.error_invalid_number)
-            binding.etOdometer.requestFocus()
             return
         }
 
@@ -216,7 +206,7 @@ class AddFuelActivity : AppCompatActivity() {
 
         val entry = FuelEntry(
             date = calendar.timeInMillis,
-            odometer = odometer,
+            odometer = 0.0,
             fuelAmount = fuelAmount,
             pricePerLiter = pricePerLiter,
             fullTank = fullTank,
@@ -225,7 +215,6 @@ class AddFuelActivity : AppCompatActivity() {
         )
 
         viewModel.insert(entry)
-
         Toast.makeText(this, getString(R.string.entry_saved), Toast.LENGTH_SHORT).show()
         finish()
     }
