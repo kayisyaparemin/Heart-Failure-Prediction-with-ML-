@@ -127,8 +127,9 @@ class MainActivity : AppCompatActivity() {
             inputType = android.text.InputType.TYPE_CLASS_NUMBER or
                     android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
             hint = getString(R.string.initial_odometer_hint)
-            setTextColor(ContextCompat.getColor(context, R.color.text_primary))
-            setHintTextColor(ContextCompat.getColor(context, R.color.text_secondary))
+            setTextColor(android.graphics.Color.parseColor("#212121"))
+            setHintTextColor(android.graphics.Color.parseColor("#757575"))
+            setBackgroundColor(android.graphics.Color.WHITE)
             setPadding(48, 24, 48, 24)
         }
 

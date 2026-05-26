@@ -105,7 +105,7 @@
                 app:boxBackgroundMode="outline"
                 app:boxStrokeColor="@color/accent"
                 app:boxStrokeWidthFocused="2dp"
-                app:hintTextColor="@color/text_secondary"
+                app:hintTextColor="@color/text_primary"
                 app:startIconDrawable="@drawable/ic_car"
                 app:startIconTint="@color/accent"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
@@ -118,7 +118,7 @@
                     android:textColor="@color/text_primary"
                     android:textSize="18sp"
                     android:hint="@string/odometer_hint"
-                    android:textColorHint="@color/text_secondary"
+                    android:textColorHint="#E0E0E0"
                     android:imeOptions="actionNext" />
 
             </com.google.android.material.textfield.TextInputLayout>
@@ -133,7 +133,7 @@
                 app:boxBackgroundMode="outline"
                 app:boxStrokeColor="@color/accent"
                 app:boxStrokeWidthFocused="2dp"
-                app:hintTextColor="@color/text_secondary"
+                app:hintTextColor="@color/text_primary"
                 app:startIconDrawable="@drawable/ic_fuel"
                 app:startIconTint="@color/accent"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
@@ -146,7 +146,7 @@
                     android:textColor="@color/text_primary"
                     android:textSize="18sp"
                     android:hint="@string/fuel_amount_hint"
-                    android:textColorHint="@color/text_secondary"
+                    android:textColorHint="#E0E0E0"
                     android:imeOptions="actionNext" />
 
             </com.google.android.material.textfield.TextInputLayout>
@@ -161,7 +161,7 @@
                 app:boxBackgroundMode="outline"
                 app:boxStrokeColor="@color/accent"
                 app:boxStrokeWidthFocused="2dp"
-                app:hintTextColor="@color/text_secondary"
+                app:hintTextColor="@color/text_primary"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -172,7 +172,7 @@
                     android:textColor="@color/text_primary"
                     android:textSize="18sp"
                     android:hint="@string/price_per_liter_hint"
-                    android:textColorHint="@color/text_secondary"
+                    android:textColorHint="#E0E0E0"
                     android:imeOptions="actionNext" />
 
             </com.google.android.material.textfield.TextInputLayout>
@@ -187,7 +187,7 @@
                 app:boxBackgroundMode="outline"
                 app:boxStrokeColor="@color/accent"
                 app:boxStrokeWidthFocused="2dp"
-                app:hintTextColor="@color/text_secondary"
+                app:hintTextColor="@color/text_primary"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -198,7 +198,7 @@
                     android:textColor="@color/text_primary"
                     android:textSize="18sp"
                     android:hint="Opsiyonel - TL/km hesabı için"
-                    android:textColorHint="@color/text_secondary"
+                    android:textColorHint="#E0E0E0"
                     android:imeOptions="actionNext" />
 
             </com.google.android.material.textfield.TextInputLayout>
@@ -303,7 +303,7 @@
                 app:boxBackgroundMode="outline"
                 app:boxStrokeColor="@color/divider"
                 app:boxStrokeWidthFocused="2dp"
-                app:hintTextColor="@color/text_secondary"
+                app:hintTextColor="@color/text_primary"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -314,7 +314,7 @@
                     android:textColor="@color/text_primary"
                     android:textSize="16sp"
                     android:hint="@string/note_hint"
-                    android:textColorHint="@color/text_secondary"
+                    android:textColorHint="#E0E0E0"
                     android:imeOptions="actionDone" />
 
             </com.google.android.material.textfield.TextInputLayout>
