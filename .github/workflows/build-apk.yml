@@ -7,6 +7,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -31,15 +34,25 @@ jobs:
         run: |
           wget -q https://services.gradle.org/distributions/gradle-8.4-bin.zip -O /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d /opt/gradle-dist
-          echo "/opt/gradle-dist/gradle-8.4/bin" >> $GITHUB_PATH
 
       - name: Build debug APK
         working-directory: navisun-fuel-tracker
         run: /opt/gradle-dist/gradle-8.4/bin/gradle assembleDebug --stacktrace
 
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: navisun-yakıt-takibi-apk
-          path: navisun-fuel-tracker/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 30
+      - name: Rename APK
+        run: cp navisun-fuel-tracker/app/build/outputs/apk/debug/app-debug.apk navisun-yakıt-takibi.apk
+
+      - name: Delete old release if exists
+        run: gh release delete navisun-v1.0 --yes --cleanup-tag || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release with APK
+        run: |
+          gh release create navisun-v1.0 \
+            --title "Navisun Yakıt Takibi v1.0" \
+            --notes "VW Polo 2010 için Navisun araç multimedya uygulaması. APK dosyasını indirip cihaza yükleyin." \
+            --target claude/navisun-fuel-tracking-app-MHT50 \
+            "navisun-yakıt-takibi.apk"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
