@@ -97,6 +97,11 @@
     <string name="delete_trip_confirmation">Bu sürüş kaydını silmek istediğinizden emin misiniz?</string>
     <string name="minutes_unit">dk</string>
 
+    <!-- Trip Status (auto-detection) -->
+    <string name="trip_status_idle">Bekleniyor</string>
+    <string name="trip_status_recording">⬤ Kaydediliyor</string>
+    <string name="trip_status_stopping">Duruyor...</string>
+
     <!-- Errors -->
     <string name="error_required">Bu alan zorunludur</string>
     <string name="error_invalid_number">Geçerli bir sayı girin</string>
