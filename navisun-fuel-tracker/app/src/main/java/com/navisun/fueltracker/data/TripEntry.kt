@@ -16,5 +16,6 @@ data class TripEntry(
     val avgSpeedKmh: Double,
     val maxSpeedKmh: Double,
     val durationMinutes: Int,
-    val routePointsJson: String  // JSON: [[lat,lon],[lat,lon],...]
+    val routePointsJson: String,  // JSON: [[lat,lon],[lat,lon],...]
+    val fuelType: String = "LPG"  // active fuel type during this trip
 )

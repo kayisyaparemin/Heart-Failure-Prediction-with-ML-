@@ -40,6 +40,12 @@
     <string name="fuel_type">Yakıt Tipi</string>
     <string name="fuel_type_benzin">BENZİN</string>
     <string name="fuel_type_lpg">LPG</string>
+    <string name="active_fuel">Aktif Yakıt</string>
+    <string name="lpg">LPG</string>
+    <string name="benzin">BENZİN</string>
+    <string name="lpg_tank">LPG Tankı</string>
+    <string name="benzin_tank">Benzin Tankı</string>
+    <string name="auto_start_note">Araç çalıştırıldığında otomatik başlar</string>
     <string name="cost_per_km">TL/km</string>
     <string name="cost_per_km_label">Maliyet / KM</string>
     <string name="distance_since_last">Son dolumdan bu yana km</string>

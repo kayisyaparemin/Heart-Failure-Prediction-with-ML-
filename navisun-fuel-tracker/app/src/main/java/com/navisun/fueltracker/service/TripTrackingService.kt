@@ -56,6 +56,7 @@ class TripTrackingService : Service() {
     private var maxSpeedKmh = 0f
     private var startTime = 0L
     private var totalDistanceKm = 0.0
+    private var activeFuelType = "LPG"
 
     private val locationListener = object : LocationListener {
         override fun onLocationChanged(location: Location) {
@@ -121,6 +122,10 @@ class TripTrackingService : Service() {
         maxSpeedKmh = 0f
         totalDistanceKm = 0.0
 
+        // Read active fuel type from SharedPreferences
+        val prefs = getSharedPreferences("navisun_prefs", android.content.Context.MODE_PRIVATE)
+        activeFuelType = prefs.getString("active_fuel_type", "LPG") ?: "LPG"
+
         val notification = buildNotification("Sürüş kaydediliyor... 0.0 km")
         startForeground(NOTIFICATION_ID, notification)
 
@@ -172,7 +177,8 @@ class TripTrackingService : Service() {
                 avgSpeedKmh = avgSpeedKmh,
                 maxSpeedKmh = maxSpeedKmh.toDouble(),
                 durationMinutes = durationMinutes,
-                routePointsJson = routeJson
+                routePointsJson = routeJson,
+                fuelType = activeFuelType
             )
 
             serviceScope.launch {

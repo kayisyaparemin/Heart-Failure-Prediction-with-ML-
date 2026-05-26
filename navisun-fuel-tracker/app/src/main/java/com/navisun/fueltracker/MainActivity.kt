@@ -28,6 +28,7 @@ class MainActivity : AppCompatActivity() {
     private val PREFS_NAME = "navisun_prefs"
     private val KEY_INITIAL_ODOMETER_SET = "initial_odometer_set"
     private val KEY_TRIP_RUNNING = "trip_running"
+    private val KEY_ACTIVE_FUEL_TYPE = "active_fuel_type"
     private val LOCATION_PERMISSION_REQUEST = 1001
 
     private val speedReceiver = object : BroadcastReceiver() {
@@ -46,6 +47,8 @@ class MainActivity : AppCompatActivity() {
         observeViewModel()
         checkInitialOdometer()
         restoreTripButtonState()
+        setupActiveFuelToggle()
+        restoreActiveFuelState()
     }
 
     override fun onResume() {
@@ -56,6 +59,7 @@ class MainActivity : AppCompatActivity() {
             IntentFilter(TripTrackingService.ACTION_SPEED_UPDATE)
         )
         restoreTripButtonState()
+        restoreActiveFuelState()
     }
 
     override fun onPause() {
@@ -224,6 +228,45 @@ class MainActivity : AppCompatActivity() {
                     Toast.LENGTH_SHORT
                 ).show()
             }
+        }
+    }
+
+    private fun setupActiveFuelToggle() {
+        binding.btnFuelLpg.setOnClickListener {
+            setActiveFuelType("LPG")
+        }
+        binding.btnFuelBenzin.setOnClickListener {
+            setActiveFuelType("BENZİN")
+        }
+    }
+
+    private fun setActiveFuelType(fuelType: String) {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_ACTIVE_FUEL_TYPE, fuelType).apply()
+        updateActiveFuelUI(fuelType)
+    }
+
+    private fun restoreActiveFuelState() {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val activeFuel = prefs.getString(KEY_ACTIVE_FUEL_TYPE, "LPG") ?: "LPG"
+        updateActiveFuelUI(activeFuel)
+    }
+
+    private fun updateActiveFuelUI(activeFuel: String) {
+        val tealColor = android.graphics.Color.parseColor("#00897b")
+        val amberColor = android.graphics.Color.parseColor("#f57c00")
+        val cardBgColor = ContextCompat.getColor(this, R.color.bg_card)
+
+        if (activeFuel == "LPG") {
+            binding.btnFuelLpg.backgroundTintList =
+                android.content.res.ColorStateList.valueOf(tealColor)
+            binding.btnFuelBenzin.backgroundTintList =
+                android.content.res.ColorStateList.valueOf(cardBgColor)
+        } else {
+            binding.btnFuelLpg.backgroundTintList =
+                android.content.res.ColorStateList.valueOf(cardBgColor)
+            binding.btnFuelBenzin.backgroundTintList =
+                android.content.res.ColorStateList.valueOf(amberColor)
         }
     }
 
