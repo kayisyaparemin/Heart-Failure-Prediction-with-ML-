@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
 import android.widget.EditText
@@ -30,13 +31,15 @@ class MainActivity : AppCompatActivity() {
     private val KEY_ACTIVE_FUEL_TYPE = "active_fuel_type"
     private val LOCATION_PERMISSION_REQUEST = 1001
 
+    private var activeFuelType: String = "LPG"
+
     private val tripStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val speedKmh = intent?.getFloatExtra(TripTrackingService.EXTRA_SPEED_KMH, 0f) ?: 0f
             val stateName = intent?.getStringExtra(TripTrackingService.EXTRA_STATE) ?: "IDLE"
             val distanceKm = intent?.getFloatExtra(TripTrackingService.EXTRA_DISTANCE_KM, 0f) ?: 0f
 
-            binding.tvSpeedValue.text = String.format("%.0f", speedKmh)
+            binding.tvSpeed.text = String.format("%.0f", speedKmh)
 
             when (stateName) {
                 "RECORDING" -> {
@@ -63,11 +66,18 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setupButtons()
+        setupToolbar()
+        selectTab("DRIVE")
+
+        // Read active fuel type from SharedPreferences
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        activeFuelType = prefs.getString(KEY_ACTIVE_FUEL_TYPE, "LPG") ?: "LPG"
+        updateActiveFuelUI()
+
+        setupTabListeners()
+        setupNavigationListeners()
         observeViewModel()
         checkInitialOdometer()
-        setupActiveFuelToggle()
-        restoreActiveFuelState()
 
         // Request location permission if not granted
         if (!hasLocationPermission()) {
@@ -75,10 +85,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Start auto-detection service (always safe to call)
-        val intent = Intent(this, TripTrackingService::class.java).apply {
+        val serviceIntent = Intent(this, TripTrackingService::class.java).apply {
             action = TripTrackingService.ACTION_START
         }
-        ContextCompat.startForegroundService(this, intent)
+        ContextCompat.startForegroundService(this, serviceIntent)
     }
 
     override fun onResume() {
@@ -88,7 +98,10 @@ class MainActivity : AppCompatActivity() {
             tripStateReceiver,
             IntentFilter(TripTrackingService.ACTION_TRIP_STATE_UPDATE)
         )
-        restoreActiveFuelState()
+        // Re-read active fuel state in case it changed
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        activeFuelType = prefs.getString(KEY_ACTIVE_FUEL_TYPE, "LPG") ?: "LPG"
+        updateActiveFuelUI()
     }
 
     override fun onPause() {
@@ -96,12 +109,36 @@ class MainActivity : AppCompatActivity() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(tripStateReceiver)
     }
 
-    private fun setupButtons() {
+    private fun setupToolbar() {
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(false)
+    }
+
+    private fun selectTab(tab: String) {
+        val accentColor = ContextCompat.getColor(this, R.color.accent)
+        val bgSecondary = ContextCompat.getColor(this, R.color.bg_secondary)
+        if (tab == "DRIVE") {
+            binding.viewFlipper.displayedChild = 0
+            binding.btnTabDrive.backgroundTintList = ColorStateList.valueOf(accentColor)
+            binding.btnTabFuel.backgroundTintList = ColorStateList.valueOf(bgSecondary)
+        } else {
+            binding.viewFlipper.displayedChild = 1
+            binding.btnTabFuel.backgroundTintList = ColorStateList.valueOf(accentColor)
+            binding.btnTabDrive.backgroundTintList = ColorStateList.valueOf(bgSecondary)
+        }
+    }
+
+    private fun setupTabListeners() {
+        binding.btnTabDrive.setOnClickListener { selectTab("DRIVE") }
+        binding.btnTabFuel.setOnClickListener { selectTab("FUEL") }
+    }
+
+    private fun setupNavigationListeners() {
         binding.btnAddFuel.setOnClickListener {
             startActivity(Intent(this, AddFuelActivity::class.java))
         }
 
-        binding.btnHistory.setOnClickListener {
+        binding.btnFuelHistory.setOnClickListener {
             startActivity(Intent(this, HistoryActivity::class.java))
         }
 
@@ -111,6 +148,62 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnTripHistory.setOnClickListener {
             startActivity(Intent(this, TripHistoryActivity::class.java))
+        }
+
+        binding.btnLpg.setOnClickListener {
+            activeFuelType = "LPG"
+            val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putString(KEY_ACTIVE_FUEL_TYPE, "LPG").apply()
+            updateActiveFuelUI()
+        }
+
+        binding.btnBenzin.setOnClickListener {
+            activeFuelType = "BENZİN"
+            val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putString(KEY_ACTIVE_FUEL_TYPE, "BENZİN").apply()
+            updateActiveFuelUI()
+        }
+    }
+
+    private fun updateActiveFuelUI() {
+        val lpgActive = ColorStateList.valueOf(Color.parseColor("#0288d1"))
+        val lpgInactive = ColorStateList.valueOf(Color.parseColor("#37474f"))
+        val benzinActive = ColorStateList.valueOf(Color.parseColor("#f57c00"))
+        val benzinInactive = ColorStateList.valueOf(Color.parseColor("#37474f"))
+        if (activeFuelType == "LPG") {
+            binding.btnLpg.backgroundTintList = lpgActive
+            binding.btnBenzin.backgroundTintList = benzinInactive
+        } else {
+            binding.btnLpg.backgroundTintList = lpgInactive
+            binding.btnBenzin.backgroundTintList = benzinActive
+        }
+    }
+
+    private fun observeViewModel() {
+        viewModel.stats.observe(this) { stats ->
+            if (stats.lastConsumption != null) {
+                binding.tvLastConsumption.text = String.format("%.1f", stats.lastConsumption)
+            } else {
+                binding.tvLastConsumption.text = "--"
+            }
+
+            if (stats.averageConsumption != null) {
+                binding.tvAvgConsumption.text = String.format("%.1f", stats.averageConsumption)
+            } else {
+                binding.tvAvgConsumption.text = "--"
+            }
+
+            if (stats.totalCost > 0) {
+                binding.tvTotalCost.text = String.format("%.0f", stats.totalCost)
+            } else {
+                binding.tvTotalCost.text = "--"
+            }
+
+            if (stats.totalKm > 0) {
+                binding.tvTotalKm.text = String.format("%.0f", stats.totalKm)
+            } else {
+                binding.tvTotalKm.text = "--"
+            }
         }
     }
 
@@ -189,77 +282,6 @@ class MainActivity : AppCompatActivity() {
                     getString(R.string.location_permission_required),
                     Toast.LENGTH_SHORT
                 ).show()
-            }
-        }
-    }
-
-    private fun setupActiveFuelToggle() {
-        binding.btnFuelLpg.setOnClickListener {
-            setActiveFuelType("LPG")
-        }
-        binding.btnFuelBenzin.setOnClickListener {
-            setActiveFuelType("BENZİN")
-        }
-    }
-
-    private fun setActiveFuelType(fuelType: String) {
-        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putString(KEY_ACTIVE_FUEL_TYPE, fuelType).apply()
-        updateActiveFuelUI(fuelType)
-    }
-
-    private fun restoreActiveFuelState() {
-        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val activeFuel = prefs.getString(KEY_ACTIVE_FUEL_TYPE, "LPG") ?: "LPG"
-        updateActiveFuelUI(activeFuel)
-    }
-
-    private fun updateActiveFuelUI(activeFuel: String) {
-        val tealColor = android.graphics.Color.parseColor("#00897b")
-        val amberColor = android.graphics.Color.parseColor("#f57c00")
-        val cardBgColor = ContextCompat.getColor(this, R.color.bg_card)
-
-        if (activeFuel == "LPG") {
-            binding.btnFuelLpg.backgroundTintList =
-                android.content.res.ColorStateList.valueOf(tealColor)
-            binding.btnFuelBenzin.backgroundTintList =
-                android.content.res.ColorStateList.valueOf(cardBgColor)
-        } else {
-            binding.btnFuelLpg.backgroundTintList =
-                android.content.res.ColorStateList.valueOf(cardBgColor)
-            binding.btnFuelBenzin.backgroundTintList =
-                android.content.res.ColorStateList.valueOf(amberColor)
-        }
-    }
-
-    private fun observeViewModel() {
-        viewModel.stats.observe(this) { stats ->
-            if (stats.lastConsumption != null) {
-                binding.tvLastConsumptionValue.text =
-                    String.format("%.1f", stats.lastConsumption)
-            } else {
-                binding.tvLastConsumptionValue.text = "--"
-            }
-
-            if (stats.averageConsumption != null) {
-                binding.tvAvgConsumptionValue.text =
-                    String.format("%.1f", stats.averageConsumption)
-            } else {
-                binding.tvAvgConsumptionValue.text = "--"
-            }
-
-            if (stats.totalCost > 0) {
-                binding.tvTotalCostValue.text =
-                    String.format("%.0f ₺", stats.totalCost)
-            } else {
-                binding.tvTotalCostValue.text = "--"
-            }
-
-            if (stats.totalKm > 0) {
-                binding.tvTotalKmValue.text =
-                    String.format("%.0f", stats.totalKm)
-            } else {
-                binding.tvTotalKmValue.text = "--"
             }
         }
     }
