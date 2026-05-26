@@ -30,4 +30,7 @@ interface FuelDao {
 
     @Query("SELECT * FROM fuel_entries ORDER BY date ASC")
     suspend fun getAllEntriesSync(): List<FuelEntry>
+
+    @Query("SELECT * FROM fuel_entries WHERE fuelType = :fuelType ORDER BY date DESC LIMIT 1")
+    suspend fun getLastEntryByType(fuelType: String): FuelEntry?
 }

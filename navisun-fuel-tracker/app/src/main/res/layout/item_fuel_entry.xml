@@ -45,7 +45,18 @@
                 android:background="#1a4a1a"
                 android:paddingHorizontal="10dp"
                 android:paddingVertical="4dp"
-                android:layout_marginEnd="10dp" />
+                android:layout_marginEnd="6dp" />
+
+            <TextView
+                android:id="@+id/tv_fuel_type_badge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_primary"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:layout_marginEnd="6dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_delete"

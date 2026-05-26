@@ -21,4 +21,10 @@ interface TripDao {
 
     @Query("SELECT * FROM trips WHERE id = :tripId LIMIT 1")
     suspend fun getTripById(tripId: Long): TripEntry?
+
+    @Query("SELECT * FROM trips WHERE startTime >= :fromTime AND endTime <= :toTime AND fuelType = :fuelType")
+    suspend fun getTripsBetween(fromTime: Long, toTime: Long, fuelType: String): List<TripEntry>
+
+    @Query("SELECT * FROM trips ORDER BY startTime DESC")
+    suspend fun getAllTripsList(): List<TripEntry>
 }

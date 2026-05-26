@@ -45,7 +45,7 @@
                 android:orientation="horizontal"
                 android:layout_marginBottom="20dp">
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_fuel_benzin"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
@@ -55,10 +55,11 @@
                     android:textSize="18sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
-                    android:background="@color/accent"
+                    app:backgroundTint="@color/accent"
+                    app:cornerRadius="8dp"
                     android:stateListAnimator="@null" />
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_fuel_lpg"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
@@ -68,7 +69,8 @@
                     android:textSize="18sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
-                    android:background="@color/bg_card"
+                    app:backgroundTint="@color/bg_card"
+                    app:cornerRadius="8dp"
                     android:stateListAnimator="@null" />
 
             </LinearLayout>
@@ -177,6 +179,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 android:hint="@string/distance_since_last"
+                android:visibility="gone"
                 app:boxBackgroundColor="@color/bg_secondary"
                 app:boxBackgroundMode="outline"
                 app:boxStrokeColor="@color/accent"
@@ -194,6 +197,44 @@
                     android:imeOptions="actionNext" />
 
             </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- GPS Mesafesi Kartı -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/card_gps_distance"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="#1a1a3a"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="GPS Mesafesi"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/tv_gps_distance"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="#64b5f6"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
 
             <!-- Otomatik hesaplanan tutar -->
             <androidx.cardview.widget.CardView

@@ -9,12 +9,17 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import com.navisun.fueltracker.data.FuelDatabase
 import com.navisun.fueltracker.data.FuelEntry
 import com.navisun.fueltracker.databinding.ActivityAddFuelBinding
 import com.navisun.fueltracker.viewmodel.FuelViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class AddFuelActivity : AppCompatActivity() {
 
@@ -25,6 +30,7 @@ class AddFuelActivity : AppCompatActivity() {
     private val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale("tr", "TR"))
 
     private var selectedFuelType = "BENZİN"
+    private var gpsDistanceKm: Double = 0.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,6 +45,7 @@ class AddFuelActivity : AppCompatActivity() {
 
         updateDateDisplay()
         updateFuelTypeUI()
+        loadGpsDistance()
     }
 
     private fun setupToolbar() {
@@ -55,6 +62,7 @@ class AddFuelActivity : AppCompatActivity() {
                 { _, year, month, dayOfMonth ->
                     calendar.set(year, month, dayOfMonth)
                     updateDateDisplay()
+                    loadGpsDistance()
                 },
                 calendar.get(Calendar.YEAR),
                 calendar.get(Calendar.MONTH),
@@ -71,13 +79,13 @@ class AddFuelActivity : AppCompatActivity() {
         binding.btnFuelBenzin.setOnClickListener {
             selectedFuelType = "BENZİN"
             updateFuelTypeUI()
-            calculateAndDisplayCost()
+            loadGpsDistance()
         }
 
         binding.btnFuelLpg.setOnClickListener {
             selectedFuelType = "LPG"
             updateFuelTypeUI()
-            calculateAndDisplayCost()
+            loadGpsDistance()
         }
     }
 
@@ -86,11 +94,35 @@ class AddFuelActivity : AppCompatActivity() {
         val cardColor = ContextCompat.getColor(this, R.color.bg_card)
 
         if (selectedFuelType == "BENZİN") {
-            binding.btnFuelBenzin.setBackgroundColor(accentColor)
-            binding.btnFuelLpg.setBackgroundColor(cardColor)
+            binding.btnFuelBenzin.backgroundTintList = android.content.res.ColorStateList.valueOf(accentColor)
+            binding.btnFuelLpg.backgroundTintList = android.content.res.ColorStateList.valueOf(cardColor)
         } else {
-            binding.btnFuelBenzin.setBackgroundColor(cardColor)
-            binding.btnFuelLpg.setBackgroundColor(accentColor)
+            binding.btnFuelBenzin.backgroundTintList = android.content.res.ColorStateList.valueOf(cardColor)
+            binding.btnFuelLpg.backgroundTintList = android.content.res.ColorStateList.valueOf(accentColor)
+        }
+    }
+
+    private fun loadGpsDistance() {
+        val currentDate = calendar.timeInMillis
+        val fuelType = selectedFuelType
+
+        lifecycleScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                val db = FuelDatabase.getDatabase(this@AddFuelActivity)
+                val lastEntry = db.fuelDao().getLastEntryByType(fuelType)
+                val fromTime = lastEntry?.date ?: 0L
+                val trips = db.tripDao().getTripsBetween(fromTime, currentDate, fuelType)
+                trips.sumOf { it.distanceKm }
+            }
+
+            gpsDistanceKm = result
+            if (gpsDistanceKm > 0.5) {
+                binding.tvGpsDistance.text = String.format("%.1f km", gpsDistanceKm)
+                binding.cardGpsDistance.visibility = View.VISIBLE
+            } else {
+                binding.cardGpsDistance.visibility = View.GONE
+            }
+            calculateAndDisplayCost()
         }
     }
 
@@ -105,31 +137,26 @@ class AddFuelActivity : AppCompatActivity() {
 
         binding.etFuelAmount.addTextChangedListener(watcher)
         binding.etPricePerLiter.addTextChangedListener(watcher)
-        binding.etDistanceSinceLast.addTextChangedListener(watcher)
     }
 
     private fun calculateAndDisplayCost() {
         val fuelAmount = binding.etFuelAmount.text.toString().toDoubleOrNull()
         val pricePerLiter = binding.etPricePerLiter.text.toString().toDoubleOrNull()
-        val distanceSinceLast = binding.etDistanceSinceLast.text.toString().toDoubleOrNull()
 
-        // Show total cost card
         if (fuelAmount != null && pricePerLiter != null && fuelAmount > 0 && pricePerLiter > 0) {
             val totalCost = fuelAmount * pricePerLiter
             binding.tvCalculatedCost.text = String.format("%.2f ₺", totalCost)
             binding.cardCalculatedCost.visibility = View.VISIBLE
+
+            if (gpsDistanceKm > 0.5) {
+                val costPerKm = totalCost / gpsDistanceKm
+                binding.tvCostPerKm.text = String.format("%.2f ₺/km", costPerKm)
+                binding.cardCostPerKm.visibility = View.VISIBLE
+            } else {
+                binding.cardCostPerKm.visibility = View.GONE
+            }
         } else {
             binding.cardCalculatedCost.visibility = View.INVISIBLE
-        }
-
-        // Show TL/km card
-        if (fuelAmount != null && pricePerLiter != null && distanceSinceLast != null
-            && fuelAmount > 0 && pricePerLiter > 0 && distanceSinceLast > 0
-        ) {
-            val costPerKm = (pricePerLiter * fuelAmount) / distanceSinceLast
-            binding.tvCostPerKm.text = String.format("%.2f ₺/km", costPerKm)
-            binding.cardCostPerKm.visibility = View.VISIBLE
-        } else {
             binding.cardCostPerKm.visibility = View.GONE
         }
     }

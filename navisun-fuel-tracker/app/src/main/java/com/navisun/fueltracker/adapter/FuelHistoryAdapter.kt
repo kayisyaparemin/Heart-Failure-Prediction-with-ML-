@@ -54,6 +54,15 @@ class FuelHistoryAdapter(
             // Tam dolum göstergesi
             binding.tvFullTank.text = if (entry.fullTank) "Tam Dolum" else "Kısmi"
 
+            // Yakıt tipi rozeti
+            val fuelTypeBadge = binding.tvFuelTypeBadge
+            fuelTypeBadge.text = entry.fuelType
+            if (entry.fuelType == "LPG") {
+                fuelTypeBadge.setBackgroundColor(android.graphics.Color.parseColor("#00897b"))
+            } else {
+                fuelTypeBadge.setBackgroundColor(android.graphics.Color.parseColor("#f57c00"))
+            }
+
             // Litre fiyatı
             binding.tvPricePerLiter.text = String.format("%.2f ₺/L", entry.pricePerLiter)
 
@@ -98,37 +107,40 @@ class FuelHistoryAdapter(
     /**
      * Girişleri ve hesaplanmış tüketimleri birleştirerek adapter'a gönderir.
      * Tüketim hesaplama: fullTank=true olan ardışık iki giriş arasında hesaplanır.
+     * GPS mesafeleri varsa odometer farkı yerine kullanılır.
      */
-    fun submitEntriesWithConsumption(entries: List<FuelEntry>) {
+    fun submitEntriesWithConsumption(entries: List<FuelEntry>, gpsDistances: Map<Long, Double> = emptyMap()) {
         val entriesAsc = entries.sortedBy { it.date }
         val result = mutableListOf<FuelEntryWithConsumption>()
-
-        // Her entry için consumption hesapla
         val consumptionMap = mutableMapOf<Long, Double>()
-        var previousFullTankEntry: FuelEntry? = null
 
-        for (entry in entriesAsc) {
-            if (entry.fullTank) {
-                val prev = previousFullTankEntry
-                if (prev != null) {
-                    val kmDiff = entry.odometer - prev.odometer
-                    if (kmDiff > 0) {
-                        val consumption = (entry.fuelAmount / kmDiff) * 100.0
-                        if (consumption in 1.0..50.0) {
-                            consumptionMap[entry.id] = consumption
+        // Group by fuelType for consumption calculation
+        val byType = entriesAsc.groupBy { it.fuelType }
+        for ((_, typeEntries) in byType) {
+            var prevFull: FuelEntry? = null
+            for (entry in typeEntries) {
+                if (entry.fullTank) {
+                    val prev = prevFull
+                    if (prev != null) {
+                        // Prefer GPS distance, fallback to odometer diff
+                        val gpsKm = gpsDistances[entry.id]
+                        val km = if (gpsKm != null && gpsKm > 0.5) gpsKm
+                                 else (entry.odometer - prev.odometer).takeIf { it > 0 }
+                        if (km != null && km > 0) {
+                            val consumption = (entry.fuelAmount / km) * 100.0
+                            if (consumption in 1.0..50.0) {
+                                consumptionMap[entry.id] = consumption
+                            }
                         }
                     }
+                    prevFull = entry
                 }
-                previousFullTankEntry = entry
             }
         }
 
-        // En yeniden en eskiye (DESC) sırala
-        val entriesDesc = entriesAsc.reversed()
-        for (entry in entriesDesc) {
+        for (entry in entriesAsc.reversed()) {
             result.add(FuelEntryWithConsumption(entry, consumptionMap[entry.id]))
         }
-
         submitList(result)
     }
 }
