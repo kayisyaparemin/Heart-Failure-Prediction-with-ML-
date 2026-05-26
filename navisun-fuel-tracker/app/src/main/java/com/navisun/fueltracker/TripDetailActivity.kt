@@ -181,18 +181,16 @@ class TripDetailActivity : AppCompatActivity() {
             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
             this.title = title
             icon = if (isStart) {
-                resources.getDrawable(android.R.drawable.presence_online, null).apply {
-                    setColorFilter(
-                        android.graphics.Color.GREEN,
-                        android.graphics.PorterDuff.Mode.SRC_IN
-                    )
+                androidx.core.content.ContextCompat.getDrawable(
+                    this@TripDetailActivity, android.R.drawable.presence_online
+                )?.mutate()?.also {
+                    it.setColorFilter(android.graphics.Color.GREEN, android.graphics.PorterDuff.Mode.SRC_IN)
                 }
             } else {
-                resources.getDrawable(android.R.drawable.presence_busy, null).apply {
-                    setColorFilter(
-                        android.graphics.Color.RED,
-                        android.graphics.PorterDuff.Mode.SRC_IN
-                    )
+                androidx.core.content.ContextCompat.getDrawable(
+                    this@TripDetailActivity, android.R.drawable.presence_busy
+                )?.mutate()?.also {
+                    it.setColorFilter(android.graphics.Color.RED, android.graphics.PorterDuff.Mode.SRC_IN)
                 }
             }
         }

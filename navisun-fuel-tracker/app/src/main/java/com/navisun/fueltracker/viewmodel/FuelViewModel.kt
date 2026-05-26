@@ -1,13 +1,16 @@
 package com.navisun.fueltracker.viewmodel
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.navisun.fueltracker.data.FuelDatabase
 import com.navisun.fueltracker.data.FuelEntry
+import com.navisun.fueltracker.data.TripEntry
 import com.navisun.fueltracker.repository.FuelRepository
+import com.navisun.fueltracker.repository.TripRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -38,6 +41,7 @@ data class FuelStats(
 class FuelViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: FuelRepository
+    private val tripRepository: TripRepository
 
     val allEntries: LiveData<List<FuelEntry>>
 
@@ -45,8 +49,9 @@ class FuelViewModel(application: Application) : AndroidViewModel(application) {
     val stats: LiveData<FuelStats> = _stats
 
     init {
-        val fuelDao = FuelDatabase.getDatabase(application).fuelDao()
-        repository = FuelRepository(fuelDao)
+        val db = FuelDatabase.getDatabase(application)
+        repository = FuelRepository(db.fuelDao())
+        tripRepository = TripRepository(db.tripDao())
         allEntries = repository.allEntries
     }
 
@@ -61,17 +66,26 @@ class FuelViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun refreshStats() = viewModelScope.launch(Dispatchers.IO) {
-        val entries = repository.getAllEntriesSync() // sorted ASC by date
-        val stats = computeStats(entries)
+        val entries = repository.getAllEntriesSync()
+        val trips = tripRepository.getAllTripsList()
+        val initialOdometer = getApplication<Application>()
+            .getSharedPreferences("navisun_prefs", Context.MODE_PRIVATE)
+            .getFloat("initial_odometer_value", 0f).toDouble()
+        val stats = computeStats(entries, trips, initialOdometer)
         _stats.postValue(stats)
     }
 
     /**
      * Tüketim hesaplama:
      * Sadece fullTank=true olan ardışık iki kayıt arasında hesaplanır.
-     * consumption = (fuelAmount / (currentOdometer - previousOdometer)) * 100
+     * GPS verisi varsa o periyottaki trip mesafeleri kullanılır, yoksa odometer farkı.
+     * totalKm için GPS trip toplamı önceliklidir.
      */
-    private fun computeStats(entriesAsc: List<FuelEntry>): FuelStats {
+    private fun computeStats(
+        entriesAsc: List<FuelEntry>,
+        allTrips: List<TripEntry>,
+        initialOdometer: Double
+    ): FuelStats {
         if (entriesAsc.isEmpty()) {
             return FuelStats()
         }
@@ -80,22 +94,24 @@ class FuelViewModel(application: Application) : AndroidViewModel(application) {
         val totalCost = entriesAsc.sumOf { it.fuelAmount * it.pricePerLiter }
         val totalFuel = entriesAsc.sumOf { it.fuelAmount }
 
-        // Toplam km: en son - en eski kilometre sayacı
-        val totalKm = if (entriesAsc.size >= 2) {
-            entriesAsc.last().odometer - entriesAsc.first().odometer
+        // Toplam km: GPS varsa GPS toplamı, yoksa odometer farkı (başlangıç odometer dahil)
+        val totalGpsKm = allTrips.sumOf { it.distanceKm }
+        val totalKm = if (totalGpsKm > 0) {
+            totalGpsKm
         } else {
-            0.0
+            val firstOdo = if (initialOdometer > 0 && entriesAsc.first().odometer > initialOdometer) {
+                initialOdometer
+            } else {
+                entriesAsc.first().odometer
+            }
+            if (entriesAsc.size >= 2) entriesAsc.last().odometer - firstOdo else 0.0
         }
 
-        // Ortalama litre fiyatı
         val avgPricePerLiter = if (entriesAsc.isNotEmpty()) {
             entriesAsc.sumOf { it.pricePerLiter } / entriesAsc.size
         } else null
 
-        // Ortalama TL/km
-        val avgCostPerKm = if (totalKm > 0) {
-            totalCost / totalKm
-        } else null
+        val avgCostPerKm = if (totalKm > 0) totalCost / totalKm else null
 
         // Tüketim hesaplama: fullTank olan ardışık çiftler
         val consumptions = mutableListOf<Pair<FuelEntry, Double>>()
@@ -105,10 +121,14 @@ class FuelViewModel(application: Application) : AndroidViewModel(application) {
             if (entry.fullTank) {
                 val prev = previousFullTankEntry
                 if (prev != null) {
-                    val kmDiff = entry.odometer - prev.odometer
+                    // GPS km bu periyotta (aynı yakıt tipi, tarih aralığı)
+                    val gpsKm = allTrips
+                        .filter { it.fuelType == entry.fuelType && it.startTime >= prev.date && it.endTime <= entry.date }
+                        .sumOf { it.distanceKm }
+                    val kmDiff = if (gpsKm > 0) gpsKm else (entry.odometer - prev.odometer)
                     if (kmDiff > 0) {
                         val consumption = (entry.fuelAmount / kmDiff) * 100.0
-                        if (consumption in 1.0..50.0) { // Makul aralık kontrolü
+                        if (consumption in 1.0..50.0) {
                             consumptions.add(Pair(entry, consumption))
                         }
                     }
@@ -122,19 +142,15 @@ class FuelViewModel(application: Application) : AndroidViewModel(application) {
         } else null
 
         val lastConsumption = consumptions.lastOrNull()?.second
-
         val bestConsumption = consumptions.minOfOrNull { it.second }
         val worstConsumption = consumptions.maxOfOrNull { it.second }
-
-        // Son 5 tüketim (en yeniden en eskiye)
         val recentConsumptions = consumptions.takeLast(5).reversed()
 
-        // Per fuel type stats
         val benzinEntries = entriesAsc.filter { it.fuelType == "BENZİN" }
         val lpgEntries = entriesAsc.filter { it.fuelType == "LPG" }
 
-        val benzinStats = computeFuelTypeStats("BENZİN", benzinEntries)
-        val lpgStats = computeFuelTypeStats("LPG", lpgEntries)
+        val benzinStats = computeFuelTypeStats("BENZİN", benzinEntries, allTrips)
+        val lpgStats = computeFuelTypeStats("LPG", lpgEntries, allTrips)
 
         return FuelStats(
             totalEntries = totalEntries,
@@ -153,7 +169,11 @@ class FuelViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
-    private fun computeFuelTypeStats(fuelType: String, entriesAsc: List<FuelEntry>): FuelTypeStats {
+    private fun computeFuelTypeStats(
+        fuelType: String,
+        entriesAsc: List<FuelEntry>,
+        allTrips: List<TripEntry>
+    ): FuelTypeStats {
         if (entriesAsc.isEmpty()) return FuelTypeStats(fuelType)
 
         val totalCost = entriesAsc.sumOf { it.fuelAmount * it.pricePerLiter }
@@ -166,7 +186,10 @@ class FuelViewModel(application: Application) : AndroidViewModel(application) {
             if (entry.fullTank) {
                 val prev = previousFullTankEntry
                 if (prev != null) {
-                    val kmDiff = entry.odometer - prev.odometer
+                    val gpsKm = allTrips
+                        .filter { it.fuelType == fuelType && it.startTime >= prev.date && it.endTime <= entry.date }
+                        .sumOf { it.distanceKm }
+                    val kmDiff = if (gpsKm > 0) gpsKm else (entry.odometer - prev.odometer)
                     if (kmDiff > 0) {
                         val consumption = (entry.fuelAmount / kmDiff) * 100.0
                         if (consumption in 1.0..50.0) {

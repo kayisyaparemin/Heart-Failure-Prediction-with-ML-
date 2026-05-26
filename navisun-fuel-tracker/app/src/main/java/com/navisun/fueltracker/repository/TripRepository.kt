@@ -19,4 +19,8 @@ class TripRepository(private val tripDao: TripDao) {
     suspend fun getTripById(tripId: Long): TripEntry? {
         return tripDao.getTripById(tripId)
     }
+
+    suspend fun getAllTripsList(): List<TripEntry> {
+        return tripDao.getAllTripsList()
+    }
 }

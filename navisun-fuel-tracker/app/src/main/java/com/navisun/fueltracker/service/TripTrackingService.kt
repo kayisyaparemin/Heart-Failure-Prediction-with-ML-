@@ -20,8 +20,10 @@ import com.navisun.fueltracker.MainActivity
 import com.navisun.fueltracker.R
 import com.navisun.fueltracker.data.FuelDatabase
 import com.navisun.fueltracker.data.TripEntry
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlin.math.asin
 import kotlin.math.cos
@@ -95,6 +97,8 @@ class TripTrackingService : Service() {
     // so the checkpoint can persist it without re-reading prefs each time.
     private var activeFuelType = "LPG"
 
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     // Checkpoint handler – fires every 30 s while a trip is in progress
     private val checkpointHandler = Handler(Looper.getMainLooper())
     private val checkpointRunnable = object : Runnable {
@@ -142,6 +146,7 @@ class TripTrackingService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        serviceScope.cancel()
         // Stop the periodic checkpoint timer
         checkpointHandler.removeCallbacks(checkpointRunnable)
         // Defensive final checkpoint: if we are torn down mid-trip, persist what we have
@@ -168,11 +173,12 @@ class TripTrackingService : Service() {
             PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
         )
         val alarmManager = getSystemService(ALARM_SERVICE) as AlarmManager
-        alarmManager.set(
-            AlarmManager.ELAPSED_REALTIME,
-            android.os.SystemClock.elapsedRealtime() + 1000,
-            pendingIntent
-        )
+        val triggerAt = android.os.SystemClock.elapsedRealtime() + 1000
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME, triggerAt, pendingIntent)
+        } else {
+            alarmManager.setExact(AlarmManager.ELAPSED_REALTIME, triggerAt, pendingIntent)
+        }
     }
 
     private fun beginTracking() {
@@ -272,7 +278,7 @@ class TripTrackingService : Service() {
         maxSpeed = 0f
 
         // Cache the active fuel type so checkpoint saves don't need to re-read prefs
-        activeFuelType = getSharedPreferences("fuel_prefs", Context.MODE_PRIVATE)
+        activeFuelType = getSharedPreferences("navisun_prefs", Context.MODE_PRIVATE)
             .getString("active_fuel_type", "LPG") ?: "LPG"
     }
 
@@ -295,7 +301,7 @@ class TripTrackingService : Service() {
         val durationHours = (endTime - startTime) / 3_600_000.0
         val avgSpeed = if (durationHours > 0) (distance / durationHours).toFloat() else 0f
 
-        val fuelType = getSharedPreferences("fuel_prefs", Context.MODE_PRIVATE)
+        val fuelType = getSharedPreferences("navisun_prefs", Context.MODE_PRIVATE)
             .getString("active_fuel_type", "LPG") ?: "LPG"
 
         val routeJson = serializeRoute(routePoints)
@@ -315,7 +321,7 @@ class TripTrackingService : Service() {
             fuelType = fuelType
         )
 
-        GlobalScope.launch(Dispatchers.IO) {
+        serviceScope.launch {
             FuelDatabase.getDatabase(applicationContext).tripDao().insertTrip(trip)
         }
 
@@ -397,7 +403,7 @@ class TripTrackingService : Service() {
             fuelType = cpFuelType
         )
 
-        GlobalScope.launch(Dispatchers.IO) {
+        serviceScope.launch {
             FuelDatabase.getDatabase(applicationContext).tripDao().insertTrip(trip)
         }
         clearCheckpoint()
