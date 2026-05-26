@@ -11,5 +11,6 @@ data class FuelEntry(
     val fuelAmount: Double,    // Doldurulan yakıt (litre)
     val pricePerLiter: Double, // Litre fiyatı (TL)
     val fullTank: Boolean,     // Tam dolum mu?
-    val note: String = ""      // Opsiyonel not
+    val note: String = "",     // Opsiyonel not
+    val fuelType: String = "BENZİN"  // Yakıt tipi: BENZİN veya LPG
 )
