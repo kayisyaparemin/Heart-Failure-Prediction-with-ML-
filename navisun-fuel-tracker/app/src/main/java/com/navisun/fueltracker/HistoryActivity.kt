@@ -5,6 +5,7 @@ import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -15,6 +16,9 @@ import com.navisun.fueltracker.viewmodel.FuelViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class HistoryActivity : AppCompatActivity() {
 
@@ -79,7 +83,12 @@ class HistoryActivity : AppCompatActivity() {
             } else {
                 binding.recyclerView.visibility = View.VISIBLE
                 binding.layoutEmpty.visibility = View.GONE
-                adapter.submitEntriesWithConsumption(entries)
+                lifecycleScope.launch {
+                    val gpsDistances = withContext(Dispatchers.IO) {
+                        computeGpsDistances(entries)
+                    }
+                    adapter.submitEntriesWithConsumption(entries, gpsDistances)
+                }
                 supportActionBar?.title = getString(R.string.history_with_count, entries.size)
             }
         }
@@ -97,5 +106,24 @@ class HistoryActivity : AppCompatActivity() {
             }
             .setNegativeButton(getString(R.string.cancel), null)
             .show()
+    }
+
+    private suspend fun computeGpsDistances(entries: List<FuelEntry>): Map<Long, Double> {
+        val db = com.navisun.fueltracker.data.FuelDatabase.getDatabase(this)
+        val result = mutableMapOf<Long, Double>()
+        val byType = entries.sortedBy { it.date }.groupBy { it.fuelType }
+        for ((_, typeEntries) in byType) {
+            val sorted = typeEntries.sortedBy { it.date }
+            for (i in 1 until sorted.size) {
+                val prev = sorted[i - 1]
+                val curr = sorted[i]
+                if (curr.fullTank) {
+                    val trips = db.tripDao().getTripsBetween(prev.date, curr.date, curr.fuelType)
+                    val totalKm = trips.sumOf { it.distanceKm }
+                    if (totalKm > 0.5) result[curr.id] = totalKm
+                }
+            }
+        }
+        return result
     }
 }
