@@ -7,7 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.os.Build
+import android.graphics.Color
 import android.os.Bundle
 import android.widget.EditText
 import android.widget.Toast
@@ -27,14 +27,34 @@ class MainActivity : AppCompatActivity() {
 
     private val PREFS_NAME = "navisun_prefs"
     private val KEY_INITIAL_ODOMETER_SET = "initial_odometer_set"
-    private val KEY_TRIP_RUNNING = "trip_running"
     private val KEY_ACTIVE_FUEL_TYPE = "active_fuel_type"
     private val LOCATION_PERMISSION_REQUEST = 1001
 
-    private val speedReceiver = object : BroadcastReceiver() {
+    private val tripStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val speedKmh = intent?.getFloatExtra(TripTrackingService.EXTRA_SPEED_KMH, 0f) ?: 0f
+            val stateName = intent?.getStringExtra(TripTrackingService.EXTRA_STATE) ?: "IDLE"
+            val distanceKm = intent?.getFloatExtra(TripTrackingService.EXTRA_DISTANCE_KM, 0f) ?: 0f
+
             binding.tvSpeedValue.text = String.format("%.0f", speedKmh)
+
+            when (stateName) {
+                "RECORDING" -> {
+                    binding.tvTripStatus.text = String.format("⬤ Kaydediliyor • %.1f km", distanceKm)
+                    binding.tvTripStatus.setTextColor(Color.parseColor("#e94560"))
+                }
+                "CONFIRMING_STOP" -> {
+                    binding.tvTripStatus.text = getString(R.string.trip_status_stopping)
+                    binding.tvTripStatus.setTextColor(Color.parseColor("#ff9800"))
+                }
+                else -> {
+                    // IDLE or CONFIRMING_START
+                    binding.tvTripStatus.text = getString(R.string.trip_status_idle)
+                    binding.tvTripStatus.setTextColor(
+                        ContextCompat.getColor(this@MainActivity, R.color.text_secondary)
+                    )
+                }
+            }
         }
     }
 
@@ -46,25 +66,34 @@ class MainActivity : AppCompatActivity() {
         setupButtons()
         observeViewModel()
         checkInitialOdometer()
-        restoreTripButtonState()
         setupActiveFuelToggle()
         restoreActiveFuelState()
+
+        // Request location permission if not granted
+        if (!hasLocationPermission()) {
+            requestLocationPermission()
+        }
+
+        // Start auto-detection service (always safe to call)
+        val intent = Intent(this, TripTrackingService::class.java).apply {
+            action = TripTrackingService.ACTION_START
+        }
+        ContextCompat.startForegroundService(this, intent)
     }
 
     override fun onResume() {
         super.onResume()
         viewModel.refreshStats()
         LocalBroadcastManager.getInstance(this).registerReceiver(
-            speedReceiver,
-            IntentFilter(TripTrackingService.ACTION_SPEED_UPDATE)
+            tripStateReceiver,
+            IntentFilter(TripTrackingService.ACTION_TRIP_STATE_UPDATE)
         )
-        restoreTripButtonState()
         restoreActiveFuelState()
     }
 
     override fun onPause() {
         super.onPause()
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(speedReceiver)
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(tripStateReceiver)
     }
 
     private fun setupButtons() {
@@ -83,76 +112,6 @@ class MainActivity : AppCompatActivity() {
         binding.btnTripHistory.setOnClickListener {
             startActivity(Intent(this, TripHistoryActivity::class.java))
         }
-
-        binding.btnTripToggle.setOnClickListener {
-            val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val isRunning = prefs.getBoolean(KEY_TRIP_RUNNING, false)
-            if (isRunning) {
-                stopTrip()
-            } else {
-                startTrip()
-            }
-        }
-    }
-
-    private fun startTrip() {
-        if (!hasLocationPermission()) {
-            requestLocationPermission()
-            return
-        }
-        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putBoolean(KEY_TRIP_RUNNING, true).apply()
-
-        val intent = Intent(this, TripTrackingService::class.java).apply {
-            action = TripTrackingService.ACTION_START
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(intent)
-        } else {
-            startService(intent)
-        }
-
-        updateTripButton(running = true)
-        binding.tvSpeedValue.text = "0"
-    }
-
-    private fun stopTrip() {
-        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putBoolean(KEY_TRIP_RUNNING, false).apply()
-
-        val intent = Intent(this, TripTrackingService::class.java).apply {
-            action = TripTrackingService.ACTION_STOP
-        }
-        startService(intent)
-
-        updateTripButton(running = false)
-        binding.tvSpeedValue.text = "0"
-        Toast.makeText(this, getString(R.string.trip_saved), Toast.LENGTH_SHORT).show()
-    }
-
-    private fun updateTripButton(running: Boolean) {
-        if (running) {
-            binding.btnTripToggle.text = getString(R.string.stop_trip)
-            binding.btnTripToggle.setBackgroundColor(
-                ContextCompat.getColor(this, android.R.color.holo_red_dark)
-            )
-            binding.btnTripToggle.backgroundTintList =
-                android.content.res.ColorStateList.valueOf(
-                    ContextCompat.getColor(this, android.R.color.holo_red_dark)
-                )
-        } else {
-            binding.btnTripToggle.text = getString(R.string.start_trip)
-            binding.btnTripToggle.backgroundTintList =
-                android.content.res.ColorStateList.valueOf(
-                    ContextCompat.getColor(this, R.color.success)
-                )
-        }
-    }
-
-    private fun restoreTripButtonState() {
-        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val isRunning = prefs.getBoolean(KEY_TRIP_RUNNING, false)
-        updateTripButton(isRunning)
     }
 
     private fun checkInitialOdometer() {
@@ -180,15 +139,13 @@ class MainActivity : AppCompatActivity() {
             .setCancelable(false)
             .setPositiveButton(getString(R.string.ok)) { _, _ ->
                 val value = editText.text.toString().toDoubleOrNull()
+                val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 if (value != null && value > 0) {
-                    val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                     prefs.edit()
                         .putBoolean(KEY_INITIAL_ODOMETER_SET, true)
                         .putFloat("initial_odometer_value", value.toFloat())
                         .apply()
                 } else {
-                    // If invalid, mark as set anyway to avoid infinite loop
-                    val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                     prefs.edit().putBoolean(KEY_INITIAL_ODOMETER_SET, true).apply()
                 }
             }
@@ -220,7 +177,11 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == LOCATION_PERMISSION_REQUEST) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                startTrip()
+                // Permission granted – service will start using GPS on next onStartCommand cycle
+                val intent = Intent(this, TripTrackingService::class.java).apply {
+                    action = TripTrackingService.ACTION_START
+                }
+                ContextCompat.startForegroundService(this, intent)
             } else {
                 Toast.makeText(
                     this,

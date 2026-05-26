@@ -75,6 +75,16 @@
                 android:textSize="12sp"
                 android:gravity="center" />
 
+            <TextView
+                android:id="@+id/tv_trip_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/trip_status_idle"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:gravity="center"
+                android:layout_marginTop="4dp" />
+
         </LinearLayout>
 
         <TextView
@@ -363,19 +373,6 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="8dp" />
-
-            <!-- Trip Start/Stop Button - full width -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_trip_toggle"
-                android:layout_width="match_parent"
-                android:layout_height="72dp"
-                android:layout_marginBottom="10dp"
-                android:text="@string/start_trip"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:textColor="@color/text_primary"
-                app:backgroundTint="@color/success"
-                app:cornerRadius="14dp" />
 
             <!-- Action Buttons Row -->
             <LinearLayout
