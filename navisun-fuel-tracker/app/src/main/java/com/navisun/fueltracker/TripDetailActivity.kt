@@ -95,6 +95,20 @@ class TripDetailActivity : AppCompatActivity() {
         binding.tvDetailAvgSpeed.text = String.format("%.0f km/s", trip.avgSpeedKmh)
         binding.tvDetailMaxSpeed.text = String.format("%.0f km/s", trip.maxSpeedKmh)
 
+        // Fuel type badge
+        binding.tvDetailFuelType.text = trip.fuelType
+        val badgeColor = if (trip.fuelType == "LPG") {
+            android.graphics.Color.parseColor("#00897b")
+        } else {
+            android.graphics.Color.parseColor("#f57c00")
+        }
+        val drawable = androidx.core.content.ContextCompat.getDrawable(
+            this,
+            R.drawable.bg_fuel_badge
+        )?.mutate()
+        (drawable as? android.graphics.drawable.GradientDrawable)?.setColor(badgeColor)
+        binding.tvDetailFuelType.background = drawable
+
         // Map
         setupRouteOnMap(trip)
     }

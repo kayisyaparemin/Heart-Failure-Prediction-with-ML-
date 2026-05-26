@@ -483,7 +483,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="YAKIT TİPİ DAĞILIMI"
+                android:text="YAKIT TANKI İSTATİSTİKLERİ"
                 android:textColor="@color/accent"
                 android:textSize="13sp"
                 android:textStyle="bold"
@@ -491,113 +491,231 @@
                 android:layout_marginBottom="10dp"
                 android:layout_marginTop="16dp" />
 
-            <LinearLayout
+            <!-- LPG Tankı section -->
+            <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="10dp">
+                android:layout_marginBottom="10dp"
+                app:cardBackgroundColor="#0a1a2a"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="4dp">
 
-                <!-- BENZİN stats -->
-                <androidx.cardview.widget.CardView
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="5dp"
-                    app:cardBackgroundColor="#1a1a0a"
-                    app:cardCornerRadius="14dp"
-                    app:cardElevation="4dp">
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/lpg_tank"
+                        android:textColor="#00897b"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="10dp" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="14dp">
+                        android:orientation="horizontal">
 
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="@string/benzin_stats"
-                            android:textColor="@color/warning"
-                            android:textSize="13sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="6dp" />
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center_horizontal">
 
-                        <TextView
-                            android:id="@+id/tv_benzin_total_cost"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/text_primary"
-                            android:textSize="14sp" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="ORT. TÜKETİM"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11sp"
+                                android:letterSpacing="0.08" />
 
-                        <TextView
-                            android:id="@+id/tv_benzin_total_fuel"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="13sp" />
+                            <TextView
+                                android:id="@+id/tv_lpg_avg_consumption"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/success"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="2dp" />
 
-                        <TextView
-                            android:id="@+id/tv_benzin_avg_consumption"
-                            android:layout_width="wrap_content"
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:textColor="@color/success"
-                            android:textSize="13sp" />
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center_horizontal">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="TOPLAM MALİYET"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11sp"
+                                android:letterSpacing="0.08" />
+
+                            <TextView
+                                android:id="@+id/tv_lpg_total_cost"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/warning"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="2dp" />
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center_horizontal">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="TOPLAM LİTRE"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11sp"
+                                android:letterSpacing="0.08" />
+
+                            <TextView
+                                android:id="@+id/tv_lpg_total_fuel"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/text_primary"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="2dp" />
+
+                        </LinearLayout>
 
                     </LinearLayout>
 
-                </androidx.cardview.widget.CardView>
+                </LinearLayout>
 
-                <!-- LPG stats -->
-                <androidx.cardview.widget.CardView
-                    android:layout_width="0dp"
+            </androidx.cardview.widget.CardView>
+
+            <!-- Benzin Tankı section -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                app:cardBackgroundColor="#1a1a0a"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="5dp"
-                    app:cardBackgroundColor="#0a1a2a"
-                    app:cardCornerRadius="14dp"
-                    app:cardElevation="4dp">
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/benzin_tank"
+                        android:textColor="#f57c00"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="10dp" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="14dp">
+                        android:orientation="horizontal">
 
-                        <TextView
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="@string/lpg_stats"
-                            android:textColor="@color/accent"
-                            android:textSize="13sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="6dp" />
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center_horizontal">
 
-                        <TextView
-                            android:id="@+id/tv_lpg_total_cost"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/text_primary"
-                            android:textSize="14sp" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="ORT. TÜKETİM"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11sp"
+                                android:letterSpacing="0.08" />
 
-                        <TextView
-                            android:id="@+id/tv_lpg_total_fuel"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="13sp" />
+                            <TextView
+                                android:id="@+id/tv_benzin_avg_consumption"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/success"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="2dp" />
 
-                        <TextView
-                            android:id="@+id/tv_lpg_avg_consumption"
-                            android:layout_width="wrap_content"
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:textColor="@color/success"
-                            android:textSize="13sp" />
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center_horizontal">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="TOPLAM MALİYET"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11sp"
+                                android:letterSpacing="0.08" />
+
+                            <TextView
+                                android:id="@+id/tv_benzin_total_cost"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/warning"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="2dp" />
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center_horizontal">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="TOPLAM LİTRE"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="11sp"
+                                android:letterSpacing="0.08" />
+
+                            <TextView
+                                android:id="@+id/tv_benzin_total_fuel"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/text_primary"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="2dp" />
+
+                        </LinearLayout>
 
                     </LinearLayout>
 
-                </androidx.cardview.widget.CardView>
+                </LinearLayout>
 
-            </LinearLayout>
+            </androidx.cardview.widget.CardView>
 
             <!-- Section: Son 5 Dolum -->
             <TextView

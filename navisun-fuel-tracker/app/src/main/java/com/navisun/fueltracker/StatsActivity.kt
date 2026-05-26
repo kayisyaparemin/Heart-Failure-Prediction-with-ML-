@@ -83,40 +83,32 @@ class StatsActivity : AppCompatActivity() {
                 String.format("%.2f ₺/km", stats.avgCostPerKm)
             } else "--"
 
-            // Yakıt tipi dağılımı - BENZİN
-            val benzin = stats.benzinStats
-            if (benzin.totalEntries > 0) {
-                binding.tvBenzinTotalCost.text = String.format(
-                    "Toplam: %.2f ₺ (%d kayıt)", benzin.totalCost, benzin.totalEntries
-                )
-                binding.tvBenzinTotalFuel.text = String.format(
-                    "Yakıt: %.2f L", benzin.totalFuel
-                )
-                binding.tvBenzinAvgConsumption.text = if (benzin.averageConsumption != null) {
-                    String.format("Tüketim: %.2f L/100km", benzin.averageConsumption)
-                } else "Tüketim: --"
-            } else {
-                binding.tvBenzinTotalCost.text = "Kayıt yok"
-                binding.tvBenzinTotalFuel.text = ""
-                binding.tvBenzinAvgConsumption.text = ""
-            }
-
-            // Yakıt tipi dağılımı - LPG
+            // LPG Tankı section
             val lpg = stats.lpgStats
             if (lpg.totalEntries > 0) {
-                binding.tvLpgTotalCost.text = String.format(
-                    "Toplam: %.2f ₺ (%d kayıt)", lpg.totalCost, lpg.totalEntries
-                )
-                binding.tvLpgTotalFuel.text = String.format(
-                    "Yakıt: %.2f L", lpg.totalFuel
-                )
                 binding.tvLpgAvgConsumption.text = if (lpg.averageConsumption != null) {
-                    String.format("Tüketim: %.2f L/100km", lpg.averageConsumption)
-                } else "Tüketim: --"
+                    String.format("%.2f L/100km", lpg.averageConsumption)
+                } else "--"
+                binding.tvLpgTotalCost.text = String.format("%.2f ₺", lpg.totalCost)
+                binding.tvLpgTotalFuel.text = String.format("%.2f L", lpg.totalFuel)
             } else {
-                binding.tvLpgTotalCost.text = "Kayıt yok"
-                binding.tvLpgTotalFuel.text = ""
-                binding.tvLpgAvgConsumption.text = ""
+                binding.tvLpgAvgConsumption.text = "--"
+                binding.tvLpgTotalCost.text = "--"
+                binding.tvLpgTotalFuel.text = "--"
+            }
+
+            // Benzin Tankı section
+            val benzin = stats.benzinStats
+            if (benzin.totalEntries > 0) {
+                binding.tvBenzinAvgConsumption.text = if (benzin.averageConsumption != null) {
+                    String.format("%.2f L/100km", benzin.averageConsumption)
+                } else "--"
+                binding.tvBenzinTotalCost.text = String.format("%.2f ₺", benzin.totalCost)
+                binding.tvBenzinTotalFuel.text = String.format("%.2f L", benzin.totalFuel)
+            } else {
+                binding.tvBenzinAvgConsumption.text = "--"
+                binding.tvBenzinTotalCost.text = "--"
+                binding.tvBenzinTotalFuel.text = "--"
             }
 
             // Son 5 dolum tüketimleri
