@@ -4,9 +4,11 @@ import android.app.DatePickerDialog
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.View
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.navisun.fueltracker.data.FuelEntry
 import com.navisun.fueltracker.databinding.ActivityAddFuelBinding
 import com.navisun.fueltracker.viewmodel.FuelViewModel
@@ -22,6 +24,8 @@ class AddFuelActivity : AppCompatActivity() {
     private val calendar = Calendar.getInstance()
     private val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale("tr", "TR"))
 
+    private var selectedFuelType = "BENZİN"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityAddFuelBinding.inflate(layoutInflater)
@@ -29,11 +33,12 @@ class AddFuelActivity : AppCompatActivity() {
 
         setupToolbar()
         setupDatePicker()
+        setupFuelTypeToggle()
         setupCostCalculation()
         setupSaveButton()
 
-        // Başlangıçta bugünün tarihini göster
         updateDateDisplay()
+        updateFuelTypeUI()
     }
 
     private fun setupToolbar() {
@@ -62,6 +67,33 @@ class AddFuelActivity : AppCompatActivity() {
         binding.btnSelectDate.text = dateFormat.format(calendar.time)
     }
 
+    private fun setupFuelTypeToggle() {
+        binding.btnFuelBenzin.setOnClickListener {
+            selectedFuelType = "BENZİN"
+            updateFuelTypeUI()
+            calculateAndDisplayCost()
+        }
+
+        binding.btnFuelLpg.setOnClickListener {
+            selectedFuelType = "LPG"
+            updateFuelTypeUI()
+            calculateAndDisplayCost()
+        }
+    }
+
+    private fun updateFuelTypeUI() {
+        val accentColor = ContextCompat.getColor(this, R.color.accent)
+        val cardColor = ContextCompat.getColor(this, R.color.bg_card)
+
+        if (selectedFuelType == "BENZİN") {
+            binding.btnFuelBenzin.setBackgroundColor(accentColor)
+            binding.btnFuelLpg.setBackgroundColor(cardColor)
+        } else {
+            binding.btnFuelBenzin.setBackgroundColor(cardColor)
+            binding.btnFuelLpg.setBackgroundColor(accentColor)
+        }
+    }
+
     private fun setupCostCalculation() {
         val watcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -73,18 +105,32 @@ class AddFuelActivity : AppCompatActivity() {
 
         binding.etFuelAmount.addTextChangedListener(watcher)
         binding.etPricePerLiter.addTextChangedListener(watcher)
+        binding.etDistanceSinceLast.addTextChangedListener(watcher)
     }
 
     private fun calculateAndDisplayCost() {
         val fuelAmount = binding.etFuelAmount.text.toString().toDoubleOrNull()
         val pricePerLiter = binding.etPricePerLiter.text.toString().toDoubleOrNull()
+        val distanceSinceLast = binding.etDistanceSinceLast.text.toString().toDoubleOrNull()
 
+        // Show total cost card
         if (fuelAmount != null && pricePerLiter != null && fuelAmount > 0 && pricePerLiter > 0) {
             val totalCost = fuelAmount * pricePerLiter
             binding.tvCalculatedCost.text = String.format("%.2f ₺", totalCost)
-            binding.cardCalculatedCost.visibility = android.view.View.VISIBLE
+            binding.cardCalculatedCost.visibility = View.VISIBLE
         } else {
-            binding.cardCalculatedCost.visibility = android.view.View.INVISIBLE
+            binding.cardCalculatedCost.visibility = View.INVISIBLE
+        }
+
+        // Show TL/km card
+        if (fuelAmount != null && pricePerLiter != null && distanceSinceLast != null
+            && fuelAmount > 0 && pricePerLiter > 0 && distanceSinceLast > 0
+        ) {
+            val costPerKm = (pricePerLiter * fuelAmount) / distanceSinceLast
+            binding.tvCostPerKm.text = String.format("%.2f ₺/km", costPerKm)
+            binding.cardCostPerKm.visibility = View.VISIBLE
+        } else {
+            binding.cardCostPerKm.visibility = View.GONE
         }
     }
 
@@ -95,7 +141,6 @@ class AddFuelActivity : AppCompatActivity() {
     }
 
     private fun saveEntry() {
-        // Doğrulama
         val odometerStr = binding.etOdometer.text.toString().trim()
         val fuelAmountStr = binding.etFuelAmount.text.toString().trim()
         val pricePerLiterStr = binding.etPricePerLiter.text.toString().trim()
@@ -148,7 +193,8 @@ class AddFuelActivity : AppCompatActivity() {
             fuelAmount = fuelAmount,
             pricePerLiter = pricePerLiter,
             fullTank = fullTank,
-            note = note
+            note = note,
+            fuelType = selectedFuelType
         )
 
         viewModel.insert(entry)

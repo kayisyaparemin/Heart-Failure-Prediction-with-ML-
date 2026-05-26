@@ -11,6 +11,14 @@ import com.navisun.fueltracker.repository.FuelRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+data class FuelTypeStats(
+    val fuelType: String,
+    val totalEntries: Int = 0,
+    val totalCost: Double = 0.0,
+    val totalFuel: Double = 0.0,
+    val averageConsumption: Double? = null
+)
+
 data class FuelStats(
     val totalEntries: Int = 0,
     val averageConsumption: Double? = null,  // L/100km
@@ -21,7 +29,10 @@ data class FuelStats(
     val totalFuel: Double = 0.0,             // Litre
     val totalKm: Double = 0.0,               // KM
     val avgPricePerLiter: Double? = null,    // TL/L
-    val recentConsumptions: List<Pair<FuelEntry, Double>> = emptyList() // son 5 dolum + tüketim
+    val avgCostPerKm: Double? = null,        // TL/km
+    val recentConsumptions: List<Pair<FuelEntry, Double>> = emptyList(), // son 5 dolum + tüketim
+    val benzinStats: FuelTypeStats = FuelTypeStats("BENZİN"),
+    val lpgStats: FuelTypeStats = FuelTypeStats("LPG")
 )
 
 class FuelViewModel(application: Application) : AndroidViewModel(application) {
@@ -81,6 +92,11 @@ class FuelViewModel(application: Application) : AndroidViewModel(application) {
             entriesAsc.sumOf { it.pricePerLiter } / entriesAsc.size
         } else null
 
+        // Ortalama TL/km
+        val avgCostPerKm = if (totalKm > 0) {
+            totalCost / totalKm
+        } else null
+
         // Tüketim hesaplama: fullTank olan ardışık çiftler
         val consumptions = mutableListOf<Pair<FuelEntry, Double>>()
         var previousFullTankEntry: FuelEntry? = null
@@ -113,6 +129,13 @@ class FuelViewModel(application: Application) : AndroidViewModel(application) {
         // Son 5 tüketim (en yeniden en eskiye)
         val recentConsumptions = consumptions.takeLast(5).reversed()
 
+        // Per fuel type stats
+        val benzinEntries = entriesAsc.filter { it.fuelType == "BENZİN" }
+        val lpgEntries = entriesAsc.filter { it.fuelType == "LPG" }
+
+        val benzinStats = computeFuelTypeStats("BENZİN", benzinEntries)
+        val lpgStats = computeFuelTypeStats("LPG", lpgEntries)
+
         return FuelStats(
             totalEntries = totalEntries,
             averageConsumption = avgConsumption,
@@ -123,7 +146,48 @@ class FuelViewModel(application: Application) : AndroidViewModel(application) {
             totalFuel = totalFuel,
             totalKm = totalKm,
             avgPricePerLiter = avgPricePerLiter,
-            recentConsumptions = recentConsumptions
+            avgCostPerKm = avgCostPerKm,
+            recentConsumptions = recentConsumptions,
+            benzinStats = benzinStats,
+            lpgStats = lpgStats
+        )
+    }
+
+    private fun computeFuelTypeStats(fuelType: String, entriesAsc: List<FuelEntry>): FuelTypeStats {
+        if (entriesAsc.isEmpty()) return FuelTypeStats(fuelType)
+
+        val totalCost = entriesAsc.sumOf { it.fuelAmount * it.pricePerLiter }
+        val totalFuel = entriesAsc.sumOf { it.fuelAmount }
+
+        val consumptions = mutableListOf<Double>()
+        var previousFullTankEntry: FuelEntry? = null
+
+        for (entry in entriesAsc) {
+            if (entry.fullTank) {
+                val prev = previousFullTankEntry
+                if (prev != null) {
+                    val kmDiff = entry.odometer - prev.odometer
+                    if (kmDiff > 0) {
+                        val consumption = (entry.fuelAmount / kmDiff) * 100.0
+                        if (consumption in 1.0..50.0) {
+                            consumptions.add(consumption)
+                        }
+                    }
+                }
+                previousFullTankEntry = entry
+            }
+        }
+
+        val avgConsumption = if (consumptions.isNotEmpty()) {
+            consumptions.sum() / consumptions.size
+        } else null
+
+        return FuelTypeStats(
+            fuelType = fuelType,
+            totalEntries = entriesAsc.size,
+            totalCost = totalCost,
+            totalFuel = totalFuel,
+            averageConsumption = avgConsumption
         )
     }
 }

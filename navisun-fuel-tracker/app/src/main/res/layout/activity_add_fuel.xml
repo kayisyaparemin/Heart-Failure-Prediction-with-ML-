@@ -30,6 +30,49 @@
             android:orientation="vertical"
             android:padding="20dp">
 
+            <!-- Yakıt Tipi Toggle -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/fuel_type"
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
+                android:layout_marginBottom="8dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:orientation="horizontal"
+                android:layout_marginBottom="20dp">
+
+                <Button
+                    android:id="@+id/btn_fuel_benzin"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:text="@string/fuel_type_benzin"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:background="@color/accent"
+                    android:stateListAnimator="@null" />
+
+                <Button
+                    android:id="@+id/btn_fuel_lpg"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:text="@string/fuel_type_lpg"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:background="@color/bg_card"
+                    android:stateListAnimator="@null" />
+
+            </LinearLayout>
+
             <!-- Tarih seçici -->
             <TextView
                 android:layout_width="wrap_content"
@@ -134,12 +177,38 @@
 
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- Son dolumdan bu yana km -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:hint="@string/distance_since_last"
+                app:boxBackgroundColor="@color/bg_secondary"
+                app:boxBackgroundMode="outline"
+                app:boxStrokeColor="@color/accent"
+                app:boxStrokeWidthFocused="2dp"
+                app:hintTextColor="@color/text_secondary"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_distance_since_last"
+                    android:layout_width="match_parent"
+                    android:layout_height="64dp"
+                    android:inputType="numberDecimal"
+                    android:textColor="@color/text_primary"
+                    android:textSize="18sp"
+                    android:hint="Opsiyonel - TL/km hesabı için"
+                    android:textColorHint="@color/text_secondary"
+                    android:imeOptions="actionNext" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
             <!-- Otomatik hesaplanan tutar -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/card_calculated_cost"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="12dp"
                 android:visibility="invisible"
                 app:cardBackgroundColor="#1a3a1a"
                 app:cardCornerRadius="12dp"
@@ -165,6 +234,44 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textColor="@color/success"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+            <!-- TL/km card -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/card_cost_per_km"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="#1a2a3a"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/cost_per_km_label"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/tv_cost_per_km"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/warning"
                         android:textSize="22sp"
                         android:textStyle="bold" />
 

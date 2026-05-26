@@ -36,6 +36,14 @@
     <string name="entry_saved">Kayıt başarıyla eklendi</string>
     <string name="total_amount">Toplam Tutar</string>
 
+    <!-- Fuel Type -->
+    <string name="fuel_type">Yakıt Tipi</string>
+    <string name="fuel_type_benzin">BENZİN</string>
+    <string name="fuel_type_lpg">LPG</string>
+    <string name="cost_per_km">TL/km</string>
+    <string name="cost_per_km_label">Maliyet / KM</string>
+    <string name="distance_since_last">Son dolumdan bu yana km</string>
+
     <!-- History -->
     <string name="no_data">Henüz kayıt yok</string>
     <string name="no_data_hint">İlk yakıt dolumunuzu eklemek için\n&#34;Yakıt Ekle&#34; butonuna tıklayın</string>
@@ -54,6 +62,34 @@
     <string name="avg_price">Ort. Litre Fiyatı</string>
     <string name="recent_consumptions">Son 5 Dolum Tüketimi</string>
     <string name="no_consumption_data">Tüketim hesaplaması için en az 2 tam dolum kaydı gerekli</string>
+    <string name="avg_cost_per_km">Ort. TL/km</string>
+    <string name="benzin_stats">BENZİN İstatistikleri</string>
+    <string name="lpg_stats">LPG İstatistikleri</string>
+
+    <!-- Initial Odometer Dialog -->
+    <string name="initial_odometer_title">Kilometre Sayacı</string>
+    <string name="initial_odometer_message">Aracınızın mevcut kilometre sayacı değerini girin:</string>
+    <string name="initial_odometer_hint">Örnek: 125000</string>
+    <string name="ok">Tamam</string>
+
+    <!-- Trip Recording -->
+    <string name="trip_history">Sürüş Geçmişi</string>
+    <string name="start_trip">Sürüş Başlat</string>
+    <string name="stop_trip">Sürüşü Bitir</string>
+    <string name="current_speed">Anlık Hız</string>
+    <string name="speed_unit">km/s</string>
+    <string name="trip_recording">Sürüş kaydediliyor...</string>
+    <string name="trip_saved">Sürüş kaydedildi</string>
+    <string name="no_trips">Henüz sürüş kaydı yok</string>
+    <string name="location_permission_required">Konum izni gerekli</string>
+    <string name="trip_detail">Sürüş Detayı</string>
+    <string name="trip_date">Tarih</string>
+    <string name="trip_duration">Süre</string>
+    <string name="trip_distance">Mesafe</string>
+    <string name="trip_avg_speed">Ortalama Hız</string>
+    <string name="trip_max_speed">Maksimum Hız</string>
+    <string name="delete_trip_confirmation">Bu sürüş kaydını silmek istediğinizden emin misiniz?</string>
+    <string name="minutes_unit">dk</string>
 
     <!-- Errors -->
     <string name="error_required">Bu alan zorunludur</string>

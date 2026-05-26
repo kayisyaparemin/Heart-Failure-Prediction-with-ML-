@@ -49,6 +49,34 @@
 
         </LinearLayout>
 
+        <!-- GPS Speed Display -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginEnd="16dp">
+
+            <TextView
+                android:id="@+id/tv_speed_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textColor="@color/text_primary"
+                android:textSize="36sp"
+                android:textStyle="bold"
+                android:gravity="center" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/speed_unit"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp"
+                android:gravity="center" />
+
+        </LinearLayout>
+
         <TextView
             android:id="@+id/tv_current_time"
             android:layout_width="wrap_content"
@@ -274,13 +302,26 @@
                 android:layout_width="match_parent"
                 android:layout_height="8dp" />
 
-            <!-- Action Buttons -->
+            <!-- Trip Start/Stop Button - full width -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_trip_toggle"
+                android:layout_width="match_parent"
+                android:layout_height="72dp"
+                android:layout_marginBottom="10dp"
+                android:text="@string/start_trip"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                app:backgroundTint="@color/success"
+                app:cornerRadius="14dp" />
+
+            <!-- Action Buttons Row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center"
-                android:layout_marginTop="8dp">
+                android:layout_marginTop="0dp">
 
                 <!-- Yakıt Ekle Button -->
                 <com.google.android.material.button.MaterialButton
@@ -288,16 +329,16 @@
                     android:layout_width="0dp"
                     android:layout_height="72dp"
                     android:layout_weight="1"
-                    android:layout_marginEnd="6dp"
+                    android:layout_marginEnd="4dp"
                     android:text="@string/add_fuel"
-                    android:textSize="18sp"
+                    android:textSize="15sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
                     app:backgroundTint="@color/accent"
                     app:cornerRadius="14dp"
                     app:icon="@drawable/ic_fuel"
                     app:iconGravity="textStart"
-                    app:iconPadding="8dp"
+                    app:iconPadding="6dp"
                     app:iconTint="@color/text_primary" />
 
                 <!-- Geçmiş Button -->
@@ -306,17 +347,17 @@
                     android:layout_width="0dp"
                     android:layout_height="72dp"
                     android:layout_weight="1"
-                    android:layout_marginStart="6dp"
-                    android:layout_marginEnd="6dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
                     android:text="@string/history"
-                    android:textSize="18sp"
+                    android:textSize="15sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
                     app:backgroundTint="@color/bg_card"
                     app:cornerRadius="14dp"
                     app:icon="@drawable/ic_history"
                     app:iconGravity="textStart"
-                    app:iconPadding="8dp"
+                    app:iconPadding="6dp"
                     app:iconTint="@color/accent"
                     app:strokeColor="@color/accent"
                     app:strokeWidth="2dp" />
@@ -327,18 +368,35 @@
                     android:layout_width="0dp"
                     android:layout_height="72dp"
                     android:layout_weight="1"
-                    android:layout_marginStart="6dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
                     android:text="@string/stats"
-                    android:textSize="18sp"
+                    android:textSize="15sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
                     app:backgroundTint="@color/bg_card"
                     app:cornerRadius="14dp"
                     app:icon="@drawable/ic_stats"
                     app:iconGravity="textStart"
-                    app:iconPadding="8dp"
+                    app:iconPadding="6dp"
                     app:iconTint="@color/accent"
                     app:strokeColor="@color/accent"
+                    app:strokeWidth="2dp" />
+
+                <!-- Sürüş Geçmişi Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_trip_history"
+                    android:layout_width="0dp"
+                    android:layout_height="72dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="Sürüş\nGeçmişi"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    app:backgroundTint="@color/bg_card"
+                    app:cornerRadius="14dp"
+                    app:strokeColor="@color/success"
                     app:strokeWidth="2dp" />
 
             </LinearLayout>
