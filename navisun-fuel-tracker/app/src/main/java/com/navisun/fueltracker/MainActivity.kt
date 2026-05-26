@@ -115,16 +115,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun selectTab(tab: String) {
-        val accentColor = ContextCompat.getColor(this, R.color.accent)
-        val bgSecondary = ContextCompat.getColor(this, R.color.bg_secondary)
+        val driveActiveColor  = ColorStateList.valueOf(Color.parseColor("#4caf50")) // yeşil
+        val fuelActiveColor   = ColorStateList.valueOf(Color.parseColor("#e94560")) // kırmızı
+        val inactiveColor     = ColorStateList.valueOf(Color.parseColor("#37474f")) // koyu gri
         if (tab == "DRIVE") {
             binding.viewFlipper.displayedChild = 0
-            binding.btnTabDrive.backgroundTintList = ColorStateList.valueOf(accentColor)
-            binding.btnTabFuel.backgroundTintList = ColorStateList.valueOf(bgSecondary)
+            binding.btnTabDrive.backgroundTintList = driveActiveColor
+            binding.btnTabFuel.backgroundTintList  = inactiveColor
         } else {
             binding.viewFlipper.displayedChild = 1
-            binding.btnTabFuel.backgroundTintList = ColorStateList.valueOf(accentColor)
-            binding.btnTabDrive.backgroundTintList = ColorStateList.valueOf(bgSecondary)
+            binding.btnTabFuel.backgroundTintList  = fuelActiveColor
+            binding.btnTabDrive.backgroundTintList = inactiveColor
         }
     }
 
