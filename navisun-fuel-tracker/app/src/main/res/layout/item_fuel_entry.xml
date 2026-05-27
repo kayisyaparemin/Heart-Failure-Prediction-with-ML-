@@ -14,16 +14,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp"
-        android:minHeight="80dp">
+        android:padding="16dp">
 
-        <!-- Row 1: Date + Full Tank Badge + Delete -->
+        <!-- Row 1: Date + badges + delete -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="10dp">
+            android:layout_marginBottom="12dp">
 
             <TextView
                 android:id="@+id/tv_date"
@@ -45,7 +44,8 @@
                 android:background="#1a4a1a"
                 android:paddingHorizontal="10dp"
                 android:paddingVertical="4dp"
-                android:layout_marginEnd="6dp" />
+                android:layout_marginEnd="6dp"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/tv_fuel_type_badge"
@@ -77,46 +77,13 @@
 
         </LinearLayout>
 
-        <!-- Row 2: Key stats in a grid -->
+        <!-- Row 2: Fuel Amount | Price per Liter | Total Cost -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
 
-            <!-- Odometer -->
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center_horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="GPS KM"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp"
-                    android:letterSpacing="0.08" />
-
-                <TextView
-                    android:id="@+id/tv_odometer"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/text_primary"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-            </LinearLayout>
-
-            <!-- Divider -->
-            <View
-                android:layout_width="1dp"
-                android:layout_height="match_parent"
-                android:background="@color/divider"
-                android:layout_marginVertical="4dp" />
-
-            <!-- Fuel Amount -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -137,19 +104,17 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/text_primary"
-                    android:textSize="16sp"
+                    android:textSize="17sp"
                     android:textStyle="bold" />
 
             </LinearLayout>
 
-            <!-- Divider -->
             <View
                 android:layout_width="1dp"
                 android:layout_height="match_parent"
                 android:background="@color/divider"
                 android:layout_marginVertical="4dp" />
 
-            <!-- Consumption -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -160,29 +125,27 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="TÜKETİM"
+                    android:text="₺/LİTRE"
                     android:textColor="@color/text_secondary"
                     android:textSize="11sp"
                     android:letterSpacing="0.08" />
 
                 <TextView
-                    android:id="@+id/tv_consumption"
+                    android:id="@+id/tv_price_per_liter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/success"
-                    android:textSize="16sp"
+                    android:textColor="@color/text_primary"
+                    android:textSize="17sp"
                     android:textStyle="bold" />
 
             </LinearLayout>
 
-            <!-- Divider -->
             <View
                 android:layout_width="1dp"
                 android:layout_height="match_parent"
                 android:background="@color/divider"
                 android:layout_marginVertical="4dp" />
 
-            <!-- Cost -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -193,7 +156,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="TUTAR (₺)"
+                    android:text="TOPLAM (₺)"
                     android:textColor="@color/text_secondary"
                     android:textSize="11sp"
                     android:letterSpacing="0.08" />
@@ -203,42 +166,126 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/warning"
-                    android:textSize="16sp"
+                    android:textSize="17sp"
                     android:textStyle="bold" />
 
             </LinearLayout>
 
         </LinearLayout>
 
-        <!-- Row 3: Price per liter + optional note -->
+        <!-- Divider between rows -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Row 3: Consumption (L/100km) | Cost per km (₺/km) | Trip km -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="10dp"
-            android:gravity="center_vertical">
+            android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/tv_price_per_liter"
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textColor="@color/text_secondary"
-                android:textSize="14sp" />
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
 
-            <TextView
-                android:id="@+id/tv_note"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="L/100KM"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.08" />
+
+                <TextView
+                    android:id="@+id/tv_consumption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/success"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@color/divider"
+                android:layout_marginVertical="4dp" />
+
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
-                android:gravity="end"
-                android:maxLines="1"
-                android:ellipsize="end"
-                android:visibility="gone" />
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₺/KM"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.08" />
+
+                <TextView
+                    android:id="@+id/tv_cost_per_km"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/accent"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@color/divider"
+                android:layout_marginVertical="4dp" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SÜRÜŞ KM"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp"
+                    android:letterSpacing="0.08" />
+
+                <TextView
+                    android:id="@+id/tv_trip_km"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
 
         </LinearLayout>
+
+        <!-- Row 4: optional note -->
+        <TextView
+            android:id="@+id/tv_note"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:visibility="gone" />
 
     </LinearLayout>
 

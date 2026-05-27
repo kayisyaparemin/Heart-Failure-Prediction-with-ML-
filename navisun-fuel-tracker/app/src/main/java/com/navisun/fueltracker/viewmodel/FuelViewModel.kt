@@ -7,9 +7,8 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.navisun.fueltracker.data.FuelDatabase
 import com.navisun.fueltracker.data.FuelEntry
-import com.navisun.fueltracker.data.TripEntry
+import com.navisun.fueltracker.data.TripDao
 import com.navisun.fueltracker.repository.FuelRepository
-import com.navisun.fueltracker.repository.TripRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -18,13 +17,7 @@ data class FuelTypeStats(
     val totalEntries: Int = 0,
     val totalCost: Double = 0.0,
     val totalFuel: Double = 0.0,
-    val totalKm: Double = 0.0,
-    val averageConsumption: Double? = null,
-    val bestConsumption: Double? = null,
-    val worstConsumption: Double? = null,
-    val avgPricePerLiter: Double? = null,
-    val avgCostPerKm: Double? = null,
-    val recentConsumptions: List<Pair<FuelEntry, Double>> = emptyList()
+    val averageConsumption: Double? = null
 )
 
 data class FuelStats(
@@ -46,7 +39,7 @@ data class FuelStats(
 class FuelViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: FuelRepository
-    private val tripRepository: TripRepository
+    private val tripDao: TripDao
 
     val allEntries: LiveData<List<FuelEntry>>
 
@@ -56,7 +49,7 @@ class FuelViewModel(application: Application) : AndroidViewModel(application) {
     init {
         val db = FuelDatabase.getDatabase(application)
         repository = FuelRepository(db.fuelDao())
-        tripRepository = TripRepository(db.tripDao())
+        tripDao = db.tripDao()
         allEntries = repository.allEntries
     }
 
@@ -72,120 +65,116 @@ class FuelViewModel(application: Application) : AndroidViewModel(application) {
 
     fun refreshStats() = viewModelScope.launch(Dispatchers.IO) {
         val entries = repository.getAllEntriesSync()
-        val trips = tripRepository.getAllTripsList()
-        _stats.postValue(computeStats(entries, trips))
+        val gpsDistances = buildGpsDistanceMap(entries)
+        val stats = computeStats(entries, gpsDistances)
+        _stats.postValue(stats)
     }
 
-    private fun computeStats(entriesAsc: List<FuelEntry>, allTrips: List<TripEntry>): FuelStats {
+    // GPS trip mesafelerini ardışık yakıt girişleri arasında hesaplar: entry.id -> km
+    private suspend fun buildGpsDistanceMap(entriesAsc: List<FuelEntry>): Map<Long, Double> {
+        val result = mutableMapOf<Long, Double>()
+        val byType = entriesAsc.sortedBy { it.date }.groupBy { it.fuelType }
+        for ((_, typeEntries) in byType) {
+            val sorted = typeEntries.sortedBy { it.date }
+            for (i in 1 until sorted.size) {
+                val prev = sorted[i - 1]
+                val curr = sorted[i]
+                val trips = tripDao.getTripsBetween(prev.date, curr.date, curr.fuelType)
+                val totalKm = trips.sumOf { it.distanceKm }
+                if (totalKm > 0.3) result[curr.id] = totalKm
+            }
+        }
+        return result
+    }
+
+    private fun computeStats(entriesAsc: List<FuelEntry>, gpsDistances: Map<Long, Double>): FuelStats {
         if (entriesAsc.isEmpty()) return FuelStats()
 
-        val totalEntries = entriesAsc.size
         val totalCost = entriesAsc.sumOf { it.fuelAmount * it.pricePerLiter }
         val totalFuel = entriesAsc.sumOf { it.fuelAmount }
+        val avgPricePerLiter = totalFuel.takeIf { it > 0 }?.let { totalCost / it }
 
-        // Toplam km: GPS toplamı (tüm yakıt tipleri dahil), fallback odometer
-        val totalGpsKm = allTrips.sumOf { it.distanceKm }
-        val totalKm = if (totalGpsKm > 0) totalGpsKm
-        else if (entriesAsc.size >= 2) entriesAsc.last().odometer - entriesAsc.first().odometer
+        val totalKm = if (entriesAsc.size >= 2)
+            entriesAsc.last().odometer - entriesAsc.first().odometer
         else 0.0
 
-        val avgPricePerLiter = entriesAsc.sumOf { it.pricePerLiter } / entriesAsc.size
         val avgCostPerKm = if (totalKm > 0) totalCost / totalKm else null
 
-        // Tüketim: fullTank olan ardışık çiftler, GPS km (segment bazlı) öncelikli
+        // Tüketim: fullTank olan ardışık çiftler; GPS mesafesi varsa GPS, yoksa odometer farkı
         val consumptions = mutableListOf<Pair<FuelEntry, Double>>()
-        var previousFullTankEntry: FuelEntry? = null
-
-        for (entry in entriesAsc) {
-            if (entry.fullTank) {
-                val prev = previousFullTankEntry
-                if (prev != null) {
-                    val gpsKm = allTrips
-                        .filter { it.startTime >= prev.date && it.endTime <= entry.date }
-                        .sumOf { it.getKmForFuelType(entry.fuelType) }
-                    val kmDiff = if (gpsKm > 0) gpsKm else (entry.odometer - prev.odometer)
-                    if (kmDiff > 0) {
-                        val consumption = (entry.fuelAmount / kmDiff) * 100.0
-                        if (consumption in 1.0..50.0) consumptions.add(Pair(entry, consumption))
+        val byType = entriesAsc.groupBy { it.fuelType }
+        for ((_, typeEntries) in byType) {
+            val sorted = typeEntries.sortedBy { it.date }
+            var prevFull: FuelEntry? = null
+            for (entry in sorted) {
+                if (entry.fullTank) {
+                    val prev = prevFull
+                    if (prev != null) {
+                        val km = gpsDistances[entry.id]
+                            ?: (entry.odometer - prev.odometer).takeIf { it > 0 }
+                        if (km != null && km > 0) {
+                            val c = (entry.fuelAmount / km) * 100.0
+                            if (c in 1.0..50.0) consumptions.add(Pair(entry, c))
+                        }
                     }
+                    prevFull = entry
                 }
-                previousFullTankEntry = entry
             }
         }
 
-        val avgConsumption = if (consumptions.isNotEmpty()) consumptions.sumOf { it.second } / consumptions.size else null
-        val lastConsumption = consumptions.lastOrNull()?.second
-        val bestConsumption = consumptions.minOfOrNull { it.second }
-        val worstConsumption = consumptions.maxOfOrNull { it.second }
-        val recentConsumptions = consumptions.takeLast(5).reversed()
-
         val benzinEntries = entriesAsc.filter { it.fuelType == "BENZİN" }
-        val lpgEntries = entriesAsc.filter { it.fuelType == "LPG" }
+        val lpgEntries    = entriesAsc.filter { it.fuelType == "LPG" }
 
         return FuelStats(
-            totalEntries = totalEntries,
-            averageConsumption = avgConsumption,
-            lastConsumption = lastConsumption,
-            bestConsumption = bestConsumption,
-            worstConsumption = worstConsumption,
-            totalCost = totalCost,
-            totalFuel = totalFuel,
-            totalKm = totalKm,
-            avgPricePerLiter = avgPricePerLiter,
-            avgCostPerKm = avgCostPerKm,
-            recentConsumptions = recentConsumptions,
-            benzinStats = computeFuelTypeStats("BENZİN", benzinEntries, allTrips),
-            lpgStats = computeFuelTypeStats("LPG", lpgEntries, allTrips)
+            totalEntries       = entriesAsc.size,
+            averageConsumption = consumptions.map { it.second }.average().takeIf { consumptions.isNotEmpty() },
+            lastConsumption    = consumptions.lastOrNull()?.second,
+            bestConsumption    = consumptions.minOfOrNull { it.second },
+            worstConsumption   = consumptions.maxOfOrNull { it.second },
+            totalCost          = totalCost,
+            totalFuel          = totalFuel,
+            totalKm            = totalKm,
+            avgPricePerLiter   = avgPricePerLiter,
+            avgCostPerKm       = avgCostPerKm,
+            recentConsumptions = consumptions.takeLast(5).reversed(),
+            benzinStats        = computeFuelTypeStats("BENZİN", benzinEntries, gpsDistances),
+            lpgStats           = computeFuelTypeStats("LPG", lpgEntries, gpsDistances)
         )
     }
 
     private fun computeFuelTypeStats(
         fuelType: String,
         entriesAsc: List<FuelEntry>,
-        allTrips: List<TripEntry>
+        gpsDistances: Map<Long, Double>
     ): FuelTypeStats {
         if (entriesAsc.isEmpty()) return FuelTypeStats(fuelType)
 
         val totalCost = entriesAsc.sumOf { it.fuelAmount * it.pricePerLiter }
         val totalFuel = entriesAsc.sumOf { it.fuelAmount }
-        val totalKm = allTrips.sumOf { it.getKmForFuelType(fuelType) }
-        val avgPricePerLiter = entriesAsc.sumOf { it.pricePerLiter } / entriesAsc.size
-        val avgCostPerKm = if (totalKm > 0) totalCost / totalKm else null
-
-        val consumptions = mutableListOf<Pair<FuelEntry, Double>>()
-        var previousFullTankEntry: FuelEntry? = null
+        val consumptions = mutableListOf<Double>()
+        var prevFull: FuelEntry? = null
 
         for (entry in entriesAsc) {
             if (entry.fullTank) {
-                val prev = previousFullTankEntry
+                val prev = prevFull
                 if (prev != null) {
-                    val gpsKm = allTrips
-                        .filter { it.startTime >= prev.date && it.endTime <= entry.date }
-                        .sumOf { it.getKmForFuelType(fuelType) }
-                    val kmDiff = if (gpsKm > 0) gpsKm else (entry.odometer - prev.odometer)
-                    if (kmDiff > 0) {
-                        val consumption = (entry.fuelAmount / kmDiff) * 100.0
-                        if (consumption in 1.0..50.0) consumptions.add(Pair(entry, consumption))
+                    val km = gpsDistances[entry.id]
+                        ?: (entry.odometer - prev.odometer).takeIf { it > 0 }
+                    if (km != null && km > 0) {
+                        val c = (entry.fuelAmount / km) * 100.0
+                        if (c in 1.0..50.0) consumptions.add(c)
                     }
                 }
-                previousFullTankEntry = entry
+                prevFull = entry
             }
         }
 
-        val avgConsumption = if (consumptions.isNotEmpty()) consumptions.sumOf { it.second } / consumptions.size else null
-
         return FuelTypeStats(
-            fuelType = fuelType,
-            totalEntries = entriesAsc.size,
-            totalCost = totalCost,
-            totalFuel = totalFuel,
-            totalKm = totalKm,
-            averageConsumption = avgConsumption,
-            bestConsumption = consumptions.minOfOrNull { it.second },
-            worstConsumption = consumptions.maxOfOrNull { it.second },
-            avgPricePerLiter = avgPricePerLiter,
-            avgCostPerKm = avgCostPerKm,
-            recentConsumptions = consumptions.takeLast(5).reversed()
+            fuelType           = fuelType,
+            totalEntries       = entriesAsc.size,
+            totalCost          = totalCost,
+            totalFuel          = totalFuel,
+            averageConsumption = consumptions.average().takeIf { consumptions.isNotEmpty() }
         )
     }
 }

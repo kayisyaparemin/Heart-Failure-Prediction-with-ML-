@@ -54,7 +54,6 @@ class HistoryActivity : AppCompatActivity() {
             setHasFixedSize(false)
         }
 
-        // Swipe to delete
         val itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
             0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
         ) {
@@ -67,7 +66,6 @@ class HistoryActivity : AppCompatActivity() {
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val position = viewHolder.adapterPosition
                 val item = adapter.currentList[position]
-                // Adapter'ı geri yükle (dialog sonucuna kadar)
                 adapter.notifyItemChanged(position)
                 showDeleteConfirmation(item.entry)
             }
@@ -112,16 +110,14 @@ class HistoryActivity : AppCompatActivity() {
         val db = com.navisun.fueltracker.data.FuelDatabase.getDatabase(this)
         val result = mutableMapOf<Long, Double>()
         val byType = entries.sortedBy { it.date }.groupBy { it.fuelType }
-        for ((fuelType, typeEntries) in byType) {
+        for ((_, typeEntries) in byType) {
             val sorted = typeEntries.sortedBy { it.date }
             for (i in 1 until sorted.size) {
                 val prev = sorted[i - 1]
                 val curr = sorted[i]
-                if (curr.fullTank) {
-                    val trips = db.tripDao().getTripsBetweenAll(prev.date, curr.date)
-                    val totalKm = trips.sumOf { it.getKmForFuelType(fuelType) }
-                    if (totalKm > 0.5) result[curr.id] = totalKm
-                }
+                val trips = db.tripDao().getTripsBetween(prev.date, curr.date, curr.fuelType)
+                val totalKm = trips.sumOf { it.distanceKm }
+                if (totalKm > 0.3) result[curr.id] = totalKm
             }
         }
         return result
