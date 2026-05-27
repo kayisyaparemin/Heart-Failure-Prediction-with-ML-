@@ -23,6 +23,7 @@ class FuelHistoryAdapter(
     )
 
     private val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale("tr", "TR"))
+    private var gpsDistances: Map<Long, Double> = emptyMap()
 
     inner class FuelEntryViewHolder(
         private val binding: ItemFuelEntryBinding
@@ -111,6 +112,7 @@ class FuelHistoryAdapter(
      * GPS mesafeleri varsa odometer farkı yerine kullanılır.
      */
     fun submitEntriesWithConsumption(entries: List<FuelEntry>, gpsDistances: Map<Long, Double> = emptyMap()) {
+        this.gpsDistances = gpsDistances
         val entriesAsc = entries.sortedBy { it.date }
         val result = mutableListOf<FuelEntryWithConsumption>()
         val consumptionMap = mutableMapOf<Long, Double>()
