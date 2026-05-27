@@ -17,7 +17,13 @@ data class FuelTypeStats(
     val totalEntries: Int = 0,
     val totalCost: Double = 0.0,
     val totalFuel: Double = 0.0,
-    val averageConsumption: Double? = null
+    val totalKm: Double = 0.0,
+    val averageConsumption: Double? = null,
+    val bestConsumption: Double? = null,
+    val worstConsumption: Double? = null,
+    val avgPricePerLiter: Double? = null,
+    val avgCostPerKm: Double? = null,
+    val recentConsumptions: List<Pair<FuelEntry, Double>> = emptyList()
 )
 
 data class FuelStats(
@@ -151,7 +157,15 @@ class FuelViewModel(application: Application) : AndroidViewModel(application) {
 
         val totalCost = entriesAsc.sumOf { it.fuelAmount * it.pricePerLiter }
         val totalFuel = entriesAsc.sumOf { it.fuelAmount }
-        val consumptions = mutableListOf<Double>()
+        val avgPricePerLiter = totalFuel.takeIf { it > 0 }?.let { totalCost / it }
+
+        val totalKm = if (entriesAsc.size >= 2)
+            entriesAsc.last().odometer - entriesAsc.first().odometer
+        else 0.0
+
+        val avgCostPerKm = if (totalKm > 0) totalCost / totalKm else null
+
+        val consumptions = mutableListOf<Pair<FuelEntry, Double>>()
         var prevFull: FuelEntry? = null
 
         for (entry in entriesAsc) {
@@ -162,7 +176,7 @@ class FuelViewModel(application: Application) : AndroidViewModel(application) {
                         ?: (entry.odometer - prev.odometer).takeIf { it > 0 }
                     if (km != null && km > 0) {
                         val c = (entry.fuelAmount / km) * 100.0
-                        if (c in 1.0..50.0) consumptions.add(c)
+                        if (c in 1.0..50.0) consumptions.add(Pair(entry, c))
                     }
                 }
                 prevFull = entry
@@ -174,7 +188,13 @@ class FuelViewModel(application: Application) : AndroidViewModel(application) {
             totalEntries       = entriesAsc.size,
             totalCost          = totalCost,
             totalFuel          = totalFuel,
-            averageConsumption = consumptions.average().takeIf { consumptions.isNotEmpty() }
+            totalKm            = totalKm,
+            averageConsumption = consumptions.map { it.second }.average().takeIf { consumptions.isNotEmpty() },
+            bestConsumption    = consumptions.minOfOrNull { it.second },
+            worstConsumption   = consumptions.maxOfOrNull { it.second },
+            avgPricePerLiter   = avgPricePerLiter,
+            avgCostPerKm       = avgCostPerKm,
+            recentConsumptions = consumptions.takeLast(5).reversed()
         )
     }
 }
