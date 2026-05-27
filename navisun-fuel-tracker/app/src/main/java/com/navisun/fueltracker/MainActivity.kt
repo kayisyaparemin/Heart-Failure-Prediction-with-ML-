@@ -34,6 +34,8 @@ class MainActivity : AppCompatActivity() {
     private val LOCATION_PERMISSION_REQUEST = 1001
 
     private var activeFuelType: String = "LPG"
+    private var statsFilter: String = "ALL"
+    private var latestStats: com.navisun.fueltracker.viewmodel.FuelStats? = null
 
     private val tripStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -75,6 +77,7 @@ class MainActivity : AppCompatActivity() {
         updateActiveFuelUI()
 
         setupTabListeners()
+        setupFuelFilterButtons()
         setupNavigationListeners()
         observeViewModel()
 
@@ -181,6 +184,64 @@ class MainActivity : AppCompatActivity() {
         binding.btnTabFuel.setOnClickListener { selectTab("FUEL") }
     }
 
+    private fun setupFuelFilterButtons() {
+        binding.btnFuelFilterAll.setOnClickListener    { applyStatsFilter("ALL") }
+        binding.btnFuelFilterLpg.setOnClickListener    { applyStatsFilter("LPG") }
+        binding.btnFuelFilterBenzin.setOnClickListener { applyStatsFilter("BENZİN") }
+        updateStatsFilterUI("ALL")
+    }
+
+    private fun applyStatsFilter(filter: String) {
+        statsFilter = filter
+        updateStatsFilterUI(filter)
+        latestStats?.let { renderMainStats(it) }
+    }
+
+    private fun updateStatsFilterUI(filter: String) {
+        val allActive    = ColorStateList.valueOf(Color.parseColor("#e94560"))
+        val lpgActive    = ColorStateList.valueOf(Color.parseColor("#0288d1"))
+        val benzinActive = ColorStateList.valueOf(Color.parseColor("#f57c00"))
+        val inactive     = ColorStateList.valueOf(Color.parseColor("#37474f"))
+        binding.btnFuelFilterAll.backgroundTintList    = if (filter == "ALL")     allActive    else inactive
+        binding.btnFuelFilterLpg.backgroundTintList    = if (filter == "LPG")     lpgActive    else inactive
+        binding.btnFuelFilterBenzin.backgroundTintList = if (filter == "BENZİN")  benzinActive else inactive
+    }
+
+    private fun renderMainStats(stats: com.navisun.fueltracker.viewmodel.FuelStats) {
+        val lastConsumption: Double?
+        val avgConsumption: Double?
+        val totalCost: Double
+        val totalKm: Double
+
+        when (statsFilter) {
+            "LPG" -> {
+                val s = stats.lpgStats
+                lastConsumption = s.recentConsumptions.firstOrNull()?.second
+                avgConsumption  = s.averageConsumption
+                totalCost       = s.totalCost
+                totalKm         = s.totalKm
+            }
+            "BENZİN" -> {
+                val s = stats.benzinStats
+                lastConsumption = s.recentConsumptions.firstOrNull()?.second
+                avgConsumption  = s.averageConsumption
+                totalCost       = s.totalCost
+                totalKm         = s.totalKm
+            }
+            else -> {
+                lastConsumption = stats.lastConsumption
+                avgConsumption  = stats.averageConsumption
+                totalCost       = stats.totalCost
+                totalKm         = stats.totalKm
+            }
+        }
+
+        binding.tvLastConsumption.text = lastConsumption?.let { String.format("%.1f", it) } ?: "--"
+        binding.tvAvgConsumption.text  = avgConsumption?.let  { String.format("%.1f", it) } ?: "--"
+        binding.tvTotalCost.text       = if (totalCost > 0) String.format("%.0f", totalCost) else "--"
+        binding.tvTotalKm.text         = if (totalKm > 0)   String.format("%.0f", totalKm)  else "--"
+    }
+
     private fun setupNavigationListeners() {
         binding.btnAddFuel.setOnClickListener {
             startActivity(Intent(this, AddFuelActivity::class.java))
@@ -238,29 +299,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun observeViewModel() {
         viewModel.stats.observe(this) { stats ->
-            if (stats.lastConsumption != null) {
-                binding.tvLastConsumption.text = String.format("%.1f", stats.lastConsumption)
-            } else {
-                binding.tvLastConsumption.text = "--"
-            }
-
-            if (stats.averageConsumption != null) {
-                binding.tvAvgConsumption.text = String.format("%.1f", stats.averageConsumption)
-            } else {
-                binding.tvAvgConsumption.text = "--"
-            }
-
-            if (stats.totalCost > 0) {
-                binding.tvTotalCost.text = String.format("%.0f", stats.totalCost)
-            } else {
-                binding.tvTotalCost.text = "--"
-            }
-
-            if (stats.totalKm > 0) {
-                binding.tvTotalKm.text = String.format("%.0f", stats.totalKm)
-            } else {
-                binding.tvTotalKm.text = "--"
-            }
+            latestStats = stats
+            renderMainStats(stats)
         }
     }
 
