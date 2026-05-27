@@ -200,12 +200,24 @@ class TripTrackingService : Service() {
     }
 
     private fun startSimulation() {
-        if (state == TripState.RECORDING || state == TripState.CONFIRMING_STOP) return
+        // Gerçek GPS aboneliğini kes — sahte noktalarla iç içe gelmesin
+        try {
+            locationManager.removeUpdates(locationListener)
+        } catch (e: Exception) {
+            // ignore
+        }
+
+        // Durum makinesini temiz bir başlangıca çek
         isSimulationMode = true
         state = TripState.IDLE
+        routePoints = mutableListOf()
+        segmentStarts = mutableListOf()
+        maxSpeed = 0f
+        movingStartTime = 0L
+        stoppedStartTime = 0L
 
-        // İstanbul Kadıköy → Bağdat Cd. güzergahı (~8.5km, ~12dk)
-        // Her nokta arası 2.5 saniye → toplam ~75 sn hareket + 10 sn durma = ~85 sn
+        // İstanbul Kadıköy → Bağdat Cd. güzergahı (~7km)
+        // Her nokta arası 2.5 saniye → toplam ~50 sn hareket + 10 sn durma = ~60 sn
         data class SimPoint(val lat: Double, val lon: Double, val speedKmh: Float)
         val route = listOf(
             SimPoint(40.9900, 29.0280,  0f),
@@ -246,6 +258,11 @@ class TripTrackingService : Service() {
                 withContext(Dispatchers.Main) { handleLocation(loc) }
                 delay(2500)
             }
+            // Simülasyon bittikten sonra gerçek GPS izlemeyi yeniden aç
+            withContext(Dispatchers.Main) {
+                isSimulationMode = false
+                requestLocationUpdates(slow = true)
+            }
         }
     }
 
@@ -269,7 +286,7 @@ class TripTrackingService : Service() {
                 if (speedKmh > START_SPEED_KMH) {
                     movingStartTime = now
                     state = TripState.CONFIRMING_START
-                    requestLocationUpdates(slow = false)
+                    if (!isSimulationMode) requestLocationUpdates(slow = false)
                 }
             }
 
@@ -279,10 +296,13 @@ class TripTrackingService : Service() {
                     if (now - movingStartTime >= confirmMs) {
                         startTrip(location)
                         state = TripState.RECORDING
+                        // RECORDING'e geçişi UI'a hemen yansıt
+                        broadcastStateUpdate(state, speedKmh)
+                        updateNotification()
                     }
                 } else {
                     state = TripState.IDLE
-                    requestLocationUpdates(slow = true)
+                    if (!isSimulationMode) requestLocationUpdates(slow = true)
                 }
             }
 
@@ -306,9 +326,9 @@ class TripTrackingService : Service() {
                 } else {
                     if (now - stoppedStartTime >= stopMs) {
                         saveTrip(location)
-                        isSimulationMode = false
                         state = TripState.IDLE
-                        requestLocationUpdates(slow = true)
+                        // Simülasyon ise GPS'i kuyruk bloğu yeniden kayda alacak
+                        if (!isSimulationMode) requestLocationUpdates(slow = true)
                     }
                 }
                 broadcastStateUpdate(state, speedKmh)
@@ -327,8 +347,11 @@ class TripTrackingService : Service() {
         startLat = location.latitude
         startLon = location.longitude
         startTime = System.currentTimeMillis()
-        routePoints = mutableListOf()
-        maxSpeed = 0f
+        val entrySpeedKmh = location.speed * 3.6f
+        routePoints = mutableListOf(
+            RoutePoint(location.latitude, location.longitude, startTime, entrySpeedKmh)
+        )
+        maxSpeed = entrySpeedKmh
         activeFuelType = getSharedPreferences("navisun_prefs", Context.MODE_PRIVATE)
             .getString("active_fuel_type", "LPG") ?: "LPG"
         segmentStarts = mutableListOf(SegmentStart(activeFuelType, 0, startTime))
