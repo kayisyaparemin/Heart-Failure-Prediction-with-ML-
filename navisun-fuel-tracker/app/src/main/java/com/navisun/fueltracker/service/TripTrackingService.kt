@@ -26,7 +26,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 import kotlin.math.asin
 import kotlin.math.cos
@@ -61,6 +63,7 @@ class TripTrackingService : Service() {
     companion object {
         const val ACTION_START = "com.navisun.fueltracker.START_TRACKING"
         const val ACTION_STOP = "com.navisun.fueltracker.STOP_TRACKING"
+        const val ACTION_SIMULATE_TRIP = "com.navisun.fueltracker.SIMULATE_TRIP"
         const val ACTION_TRIP_STATE_UPDATE = "TRIP_STATE_UPDATE"
         const val ACTION_FUEL_TYPE_CHANGED = "com.navisun.fueltracker.FUEL_TYPE_CHANGED"
         const val EXTRA_STATE = "state"
@@ -98,6 +101,7 @@ class TripTrackingService : Service() {
     private var activeFuelType = "LPG"
 
     private var segmentStarts = mutableListOf<SegmentStart>()
+    private var isSimulationMode = false
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -148,6 +152,7 @@ class TripTrackingService : Service() {
         when (intent?.action) {
             ACTION_START -> beginTracking()
             ACTION_STOP -> endTracking()
+            ACTION_SIMULATE_TRIP -> startSimulation()
         }
         return START_STICKY
     }
@@ -194,6 +199,56 @@ class TripTrackingService : Service() {
         checkpointHandler.postDelayed(checkpointRunnable, CHECKPOINT_INTERVAL_MS)
     }
 
+    private fun startSimulation() {
+        if (state == TripState.RECORDING || state == TripState.CONFIRMING_STOP) return
+        isSimulationMode = true
+        state = TripState.IDLE
+
+        // İstanbul Kadıköy → Bağdat Cd. güzergahı (~8.5km, ~12dk)
+        // Her nokta arası 2.5 saniye → toplam ~75 sn hareket + 10 sn durma = ~85 sn
+        data class SimPoint(val lat: Double, val lon: Double, val speedKmh: Float)
+        val route = listOf(
+            SimPoint(40.9900, 29.0280,  0f),
+            SimPoint(40.9908, 29.0255, 28f),
+            SimPoint(40.9918, 29.0220, 46f),
+            SimPoint(40.9930, 29.0175, 62f),
+            SimPoint(40.9944, 29.0120, 74f),
+            SimPoint(40.9958, 29.0065, 81f),
+            SimPoint(40.9972, 29.0008, 79f),
+            SimPoint(40.9986, 28.9950, 76f),
+            SimPoint(41.0000, 28.9892, 82f),
+            SimPoint(41.0014, 28.9834, 88f),
+            SimPoint(41.0028, 28.9776, 84f),
+            SimPoint(41.0040, 28.9720, 77f),
+            SimPoint(41.0052, 28.9664, 71f),
+            SimPoint(41.0062, 28.9612, 65f),
+            SimPoint(41.0070, 28.9572, 54f),
+            SimPoint(41.0076, 28.9540, 42f),
+            SimPoint(41.0080, 28.9518, 30f),
+            SimPoint(41.0082, 28.9505, 14f),
+            SimPoint(41.0083, 28.9500,  4f),
+            SimPoint(41.0083, 28.9499,  1f),
+            SimPoint(41.0083, 28.9499,  0f),
+            SimPoint(41.0083, 28.9499,  0f),
+            SimPoint(41.0083, 28.9499,  0f),
+            SimPoint(41.0083, 28.9499,  0f)
+        )
+
+        serviceScope.launch {
+            for (pt in route) {
+                val loc = Location("simulation").apply {
+                    latitude  = pt.lat
+                    longitude = pt.lon
+                    speed     = pt.speedKmh / 3.6f
+                    time      = System.currentTimeMillis()
+                    accuracy  = 8f
+                }
+                withContext(Dispatchers.Main) { handleLocation(loc) }
+                delay(2500)
+            }
+        }
+    }
+
     private fun endTracking() {
         checkpointHandler.removeCallbacks(checkpointRunnable)
         try {
@@ -219,8 +274,9 @@ class TripTrackingService : Service() {
             }
 
             TripState.CONFIRMING_START -> {
+                val confirmMs = if (isSimulationMode) 2_000L else CONFIRM_START_MS
                 if (speedKmh > START_SPEED_KMH) {
-                    if (now - movingStartTime >= CONFIRM_START_MS) {
+                    if (now - movingStartTime >= confirmMs) {
                         startTrip(location)
                         state = TripState.RECORDING
                     }
@@ -242,13 +298,15 @@ class TripTrackingService : Service() {
             }
 
             TripState.CONFIRMING_STOP -> {
+                val stopMs = if (isSimulationMode) 8_000L else CONFIRM_STOP_MS
                 if (speedKmh >= STOP_SPEED_KMH) {
                     state = TripState.RECORDING
                     routePoints.add(RoutePoint(location.latitude, location.longitude, now, speedKmh))
                     if (speedKmh > maxSpeed) maxSpeed = speedKmh
                 } else {
-                    if (now - stoppedStartTime >= CONFIRM_STOP_MS) {
+                    if (now - stoppedStartTime >= stopMs) {
                         saveTrip(location)
+                        isSimulationMode = false
                         state = TripState.IDLE
                         requestLocationUpdates(slow = true)
                     }

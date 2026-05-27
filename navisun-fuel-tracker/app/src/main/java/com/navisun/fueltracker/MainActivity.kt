@@ -112,6 +112,16 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.action_simulate_trip -> {
+                val serviceIntent = Intent(this, TripTrackingService::class.java).apply {
+                    action = TripTrackingService.ACTION_SIMULATE_TRIP
+                }
+                ContextCompat.startForegroundService(this, serviceIntent)
+                Toast.makeText(this,
+                    "Simülasyon başladı! ~85 saniye sonra sürüş kaydedilecek.",
+                    Toast.LENGTH_LONG).show()
+                true
+            }
             R.id.action_insert_test_data -> {
                 AlertDialog.Builder(this)
                     .setTitle("Test Verisi Ekle")

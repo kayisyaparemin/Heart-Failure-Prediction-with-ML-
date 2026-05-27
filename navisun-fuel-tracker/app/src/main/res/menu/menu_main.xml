@@ -3,6 +3,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/action_simulate_trip"
+        android:title="Sürüş Simüle Et (~85sn)"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_insert_test_data"
         android:title="Test Verisi Ekle"
         app:showAsAction="never" />
