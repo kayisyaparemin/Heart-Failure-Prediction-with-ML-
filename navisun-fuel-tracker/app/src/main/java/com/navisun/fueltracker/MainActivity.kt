@@ -208,36 +208,36 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderMainStats(stats: com.navisun.fueltracker.viewmodel.FuelStats) {
-        val lastConsumption: Double?
-        val avgConsumption: Double?
+        val lastCostPerKm: Double?
+        val avgCostPerKm: Double?
         val totalCost: Double
         val totalKm: Double
 
         when (statsFilter) {
             "LPG" -> {
                 val s = stats.lpgStats
-                lastConsumption = s.recentConsumptions.firstOrNull()?.second
-                avgConsumption  = s.averageConsumption
-                totalCost       = s.totalCost
-                totalKm         = s.totalKm
+                lastCostPerKm = s.lastCostPerKm
+                avgCostPerKm  = s.avgCostPerKm
+                totalCost     = s.totalCost
+                totalKm       = s.totalKm
             }
             "BENZİN" -> {
                 val s = stats.benzinStats
-                lastConsumption = s.recentConsumptions.firstOrNull()?.second
-                avgConsumption  = s.averageConsumption
-                totalCost       = s.totalCost
-                totalKm         = s.totalKm
+                lastCostPerKm = s.lastCostPerKm
+                avgCostPerKm  = s.avgCostPerKm
+                totalCost     = s.totalCost
+                totalKm       = s.totalKm
             }
             else -> {
-                lastConsumption = stats.lastConsumption
-                avgConsumption  = stats.averageConsumption
-                totalCost       = stats.totalCost
-                totalKm         = stats.totalKm
+                lastCostPerKm = stats.lastCostPerKm
+                avgCostPerKm  = stats.avgCostPerKm
+                totalCost     = stats.totalCost
+                totalKm       = stats.totalKm
             }
         }
 
-        binding.tvLastConsumption.text = lastConsumption?.let { String.format("%.1f", it) } ?: "--"
-        binding.tvAvgConsumption.text  = avgConsumption?.let  { String.format("%.1f", it) } ?: "--"
+        binding.tvLastConsumption.text = lastCostPerKm?.let { String.format("%.2f", it) } ?: "--"
+        binding.tvAvgConsumption.text  = avgCostPerKm?.let  { String.format("%.2f", it) } ?: "--"
         binding.tvTotalCost.text       = if (totalCost > 0) String.format("%.0f", totalCost) else "--"
         binding.tvTotalKm.text         = if (totalKm > 0)   String.format("%.0f", totalKm)  else "--"
     }
