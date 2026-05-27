@@ -9,15 +9,20 @@ import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.Toast
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.navisun.fueltracker.databinding.ActivityMainBinding
 import com.navisun.fueltracker.service.TripTrackingService
 import com.navisun.fueltracker.viewmodel.FuelViewModel
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -98,6 +103,47 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         LocalBroadcastManager.getInstance(this).unregisterReceiver(tripStateReceiver)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_main, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_insert_test_data -> {
+                AlertDialog.Builder(this)
+                    .setTitle("Test Verisi Ekle")
+                    .setMessage("5 sürüş ve 5 yakıt kaydı eklenecek (İstanbul güzergahları, LPG + BENZİN). Devam edilsin mi?")
+                    .setPositiveButton("Ekle") { _, _ ->
+                        lifecycleScope.launch {
+                            TestDataHelper.insertTestData(applicationContext)
+                            viewModel.refreshStats()
+                            Toast.makeText(this@MainActivity, "Test verisi eklendi ✓", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .setNegativeButton("İptal", null)
+                    .show()
+                true
+            }
+            R.id.action_clear_all_data -> {
+                AlertDialog.Builder(this)
+                    .setTitle("Tüm Veriyi Sil")
+                    .setMessage("Tüm sürüş ve yakıt kayıtları silinecek. Bu işlem geri alınamaz!")
+                    .setPositiveButton("Sil") { _, _ ->
+                        lifecycleScope.launch {
+                            TestDataHelper.clearAllData(applicationContext)
+                            viewModel.refreshStats()
+                            Toast.makeText(this@MainActivity, "Tüm veri silindi.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .setNegativeButton("İptal", null)
+                    .show()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
 
     private fun setupToolbar() {
